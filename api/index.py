@@ -1,11 +1,10 @@
 import imaplib
 import email
-import email.utils
 import base64
 import hashlib
 import requests
 from email.header import decode_header
-from datetime import datetime,timedelta
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session
 
 app = Flask(__name__, template_folder="../templates")
@@ -217,7 +216,6 @@ def load_payload():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-
 @app.route("/api/fetch-chunk", methods=["POST"])
 def fetch_chunk_api():
     if not validate_active_session():
@@ -226,30 +224,16 @@ def fetch_chunk_api():
 
     data = request.json or {}
     accounts = data.get("accounts", [])
-    date_from_str = data.get("date")          # dateFrom (e.g., "2026-11-11")
-    date_to_str = data.get("date_to")         # dateTo (e.g., "2026-11-11")
-    offset = int(data.get("offset", 0))       
+    target_date_str = data.get("date")
+    offset = int(data.get("offset", 0))
     limit = int(data.get("limit", 7))
     
     try:
-        date_from = datetime.strptime(date_from_str, "%Y-%m-%d").date() if date_from_str else datetime.now().date()
+        target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date() if target_date_str else datetime.now().date()
     except ValueError:
-        date_from = datetime.now().date()
+        target_date = datetime.now().date()
 
-    try:
-        date_to = datetime.strptime(date_to_str, "%Y-%m-%d").date() if date_to_str else date_from
-    except ValueError:
-        date_to = date_from
-
-    # --- TIMEZONE OFFSET CORRECTION (-1 Day Shift) ---
-    # Shift search window back by 1 day to counteract Yahoo IMAP's UTC time offset,
-    # ensuring your local date selections match the fetched emails precisely.
-    search_since = date_from - timedelta(days=1)
-    search_before = date_to  # BEFORE is exclusive, perfectly capturing the target day
-
-    formatted_since_str = search_since.strftime("%d-%b-%Y")
-    formatted_before_str = search_before.strftime("%d-%b-%Y")
-    
+    formatted_date_str = target_date.strftime("%d-%b-%Y")
     all_fetched_emails = []
 
     for acc in accounts:
@@ -263,16 +247,13 @@ def fetch_chunk_api():
             mail.login(spot_id, password)
             mail.select("INBOX", readonly=True)
 
-            search_query = f'SINCE "{formatted_since_str}" BEFORE "{formatted_before_str}"'
-
-            status, response = mail.search(None, search_query)
+            status, response = mail.search(None, f'ON "{formatted_date_str}"')
             if status != "OK" or not response[0]:
                 mail.logout()
                 continue
 
             msg_ids = [m.decode() for m in response[0].split()]
             reversed_ids = list(reversed(msg_ids))
-            
             chunk_ids = reversed_ids[offset : offset + limit]
             
             for msg_id in chunk_ids:

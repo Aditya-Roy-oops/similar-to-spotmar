@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AllMailSpot - Live Mailboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CodeMirror 5 CDN for Colorful HTML Code Editing -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/selection/active-line.min.js"></script>
+
+    <style>
+        .CodeMirror {
+            height: 100%;
+            font-family: 'Fira Code', Consolas, Monaco, monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .CodeMirror-activeline-background { background: rgba(99, 102, 241, 0.15) !important; }
+        .cm-search-highlight { background-color: #fef08a !important; border: 1px solid #eab308; border-radius: 2px; }
+
+
+        .cm-search-match-other {
+            background-color: rgba(236, 72, 153, 0.35) !important;
+            border-bottom: 2px solid rgba(236, 72, 153, 0.9) !important;
+            border-radius: 2px;
+        }
+
+        /* Currently active match: Green */
+        .cm-search-match-active {
+            background-color: rgba(34, 197, 94, 0.6) !important;
+            border-bottom: 3px solid #16a34a !important;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen font-sans flex flex-col justify-between transition-colors duration-200">
+
+    <div>
+        <!-- Top Navigation Bar -->
+        <header class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-30 px-4 py-2.5 shadow-sm transition-colors duration-200">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-tr from-indigo-600 to-purple-600 text-white p-2 rounded-xl shadow-md shadow-indigo-200 dark:shadow-none flex items-center justify-center">
+                        <i class="fa-solid fa-envelope-open-text text-base"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-black text-base text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                            AllMailSpot <span class="text-[9px] bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 px-1 py-0.5 rounded font-bold uppercase">Pro</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Live Multi-ID Streamer & Inspector</p>
+                    </div>
+                </div>
+
+                <!-- Controls & Search -->
+                <div class="flex items-center space-x-2.5 flex-wrap">
+                    <div class="flex items-center space-x-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 shadow-sm focus-within:border-green-600">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+                        <input type="text" id="searchInput" oninput="renderFilteredGrids()" placeholder="Search emails..." class="bg-transparent text-xs text-slate-700 dark:text-slate-200 font-medium outline-none w-32 sm:w-44">
+                    </div>
+
+                    <div class="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm text-xs">
+                        <input type="date" id="dateFrom" title="From Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
+                        <span class="text-slate-400 font-bold">-</span>
+                        <input type="date" id="dateTo" title="To Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
+                    </div>
+
+
+                    <div class="relative inline-block">
+                        <button onclick="this.nextElementSibling.classList.toggle('hidden')"
+                            class="px-2.5 py-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold rounded-lg flex items-center space-x-2 shadow-sm transition">
+                            <i class="fa-solid fa-layer-group text-purple-600 dark:text-purple-400"></i>
+                            <span>Other Apps</span>
+                            <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                        </button>
+                    
+                        <div class="hidden absolute right-0 mt-1 w-36 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                            <a href="/head-mixer-v1" target="_blank"
+                                class="block px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                Head Mixer Version 1
+                            </a>
+                            <a href="/head-mixer-v2" target="_blank"
+                                class="block px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                Head Mixer Version 2
+                            </a>
+                            <a href="/random-wikipedia" target="_blank"
+                                class="block px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                Random Wikipedia
+                            </a>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleTheme()" title="Toggle Theme" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg text-xs transition shadow-sm">
+                        <i id="themeIcon" class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <button onclick="toggleConfigModal()" class="px-2.5 py-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold rounded-lg flex items-center space-x-1 shadow-sm transition">
+                        <i class="fa-solid fa-key text-green-600 dark:text-green-400"></i>
+                        <span>Accounts (<span id="accountCountBadge">3</span>)</span>
+                    </button>
+
+                    <button onclick="startFreshSync()" id="fetchBtn" class="px-3.5 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition shadow-sm">
+                        <i class="fa-solid fa-rotate-right" id="refreshSpinner"></i>
+                        <span>Sync</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <main class="max-w-7xl mx-auto p-4 md:p-5">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xs mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors duration-200">
+                <div class="flex items-center space-x-3">
+                    <div class="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center space-x-2">
+                        <span>Displaying <span id="mailCount" class="font-bold text-slate-900 dark:text-white">0</span> emails</span>
+                        <span id="syncStatusBadge" class="hidden text-[10px] bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full font-semibold animate-pulse border border-green-200 dark:border-green-800">Fetching chunk (7)...</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 overflow-x-auto pb-1 md:pb-0" id="sourceFiltersContainer">
+                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1"><i class="fa-solid fa-filter mr-1 text-green-600"></i>Sources:</span>
+                </div>
+
+                <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-2 shrink-0">
+                    <span id="timerCountdown" class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-md font-mono text-[11px] border border-slate-200 dark:border-slate-700">Auto-syncing in 05:00</span>
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                </div>
+            </div>
+
+            <!-- DEFAULT FULL-WIDTH GRID -->
+            <div id="emailGrid" class="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+                <!-- Dynamic Cards Populated Here -->
+            </div>
+
+            <div id="emptyState" class="hidden text-center py-20 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
+                <i class="fa-solid fa-inbox text-4xl text-slate-300 dark:text-slate-700 mb-3"></i>
+                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Click "Sync" to Innitiate</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">Make sure your Yahoo App Passwords and Spot IDs are correctly configured and match the target date range.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-6 text-center text-xs text-slate-500 dark:text-slate-400 mt-8 transition-colors duration-200">
+        <p>&copy; 2026 AllMailSpot. All rights reserved. &bull; Designed By <strong class="text-green-600 dark:text-green-400 font-bold">"Adimon"</strong></p>
+    </footer>
+
+    <!-- FULLSCREEN SPLIT INSPECTOR OVERLAY -->
+    <div id="inspectorOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex hidden">
+        <div class="w-full md:w-4/12 lg:w-3/12 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full shadow-2xl transition-colors duration-200">
+            <div class="p-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-layer-group text-green-600 dark:text-green-400"></i>
+                    <span>All Emails Stream</span>
+                </span>
+                <button onclick="closeInspector()" class="px-2 py-0.5 text-[11px] bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded flex items-center space-x-1 shadow-xs transition">
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Close</span>
+                </button>
+            </div>
+
+            <div id="sideEmailGrid" class="flex-1 overflow-y-auto p-2.5 grid grid-cols-2 gap-2 align-content-start bg-slate-50/50 dark:bg-slate-950/50"></div>
+        </div>
+
+        <div class="hidden md:flex flex-1 bg-white dark:bg-slate-900 flex-col h-full transition-colors duration-200">
+            <div class="px-4 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+                <div class="flex items-center space-x-2 flex-wrap gap-y-1.5">
+                    <div class="flex items-center space-x-1 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs shadow-xs mr-1">
+                        <button onclick="navigateMail('prev')" id="prevMailBtn" title="Previous Email (Left Arrow)" class="px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:text-green-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition font-bold">
+                            <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                        </button>
+                        <span class="text-slate-300 dark:text-slate-700 font-bold">|</span>
+                        <button onclick="navigateMail('next')" id="nextMailBtn" title="Next Email (Right Arrow)" class="px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:text-green-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition font-bold">
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-1 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs shadow-xs">
+                        <button onclick="switchTab('preview')" id="tab-preview" class="px-3 py-1 rounded-md bg-green-600 text-white font-semibold transition text-xs">
+                            <i class="fa-solid fa-eye mr-1"></i> Preview
+                        </button>
+                        <button onclick="switchTab('editor')" id="tab-editor" class="px-3 py-1 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-200 font-semibold transition text-xs">
+                            <i class="fa-solid fa-code text-orange-500 mr-1"></i> Editor
+                        </button>
+                    </div>
+
+                    <button onclick="toggleStarActiveEmail()" id="inspectorStarBtn" class="px-2.5 py-1 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
+                        <i id="inspectorStarIcon" class="fa-regular fa-star text-amber-600 dark:text-amber-400"></i>
+                        <span id="inspectorStarText">Star Head</span>
+                    </button>
+
+                    <button onclick="toggleFindReplaceBar()" class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-300 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
+                        <i class="fa-solid fa-search text-indigo-600 dark:text-indigo-400"></i>
+                        <span>Find & Replace</span>
+                    </button>
+
+                    <button onclick="findHeadTag()" class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
+                        <i class="fa-solid fa-magnifying-glass text-amber-600 dark:text-amber-400"></i>
+                        <span>Find &lt;/head&gt;</span>
+                    </button>
+
+                    <button onclick="disableEmailLinks()" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
+                        <i class="fa-solid fa-link-slash text-rose-600 dark:text-rose-400"></i>
+                        <span>Strip Link Dots</span>
+                    </button>
+
+                    <button onclick="clearTitleContent()" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
+                        <i class="fa-solid fa-heading text-rose-600 dark:text-rose-400"></i>
+                        <span>Clear Title Content</span>
+                    </button>
+
+                    <button onclick="copyHeadContent()" class="px-3 py-1.5 bg-green-50 dark:bg-green-950 hover:bg-green-100 dark:hover:bg-green-900 border border-green-300 dark:border-green-800 text-white-800 dark:text-white-300 text-xs font-bold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
+                        <i class="fa-solid fa-copy text-green-600 dark:text-green-400"></i>
+                        <span>Copy &lt;head&gt;</span>
+                    </button>
+
+                    
+                </div>
+                
+                <button onclick="closeInspector()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-base transition ml-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- COMPACT EMAIL META PANEL (~28% max height layout with restored original + decoded values) -->
+            <div class="px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/90 space-y-1.5 text-xs max-h-[30vh] overflow-y-auto">
+                <!-- Row 1: From Name, From Email, Account Brief -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div class="flex items-center justify-start bg-white dark:bg-slate-800/80 px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                        <div class="truncate pr-1">
+                            <span class="font-bold text-slate-400 text-[9px] uppercase block">From Name</span>
+                            <span id="modalFromName" class="font-bold text-green-600 dark:text-green-400 truncate block text-[11px]">--</span>
+                        </div>
+                        <button onclick="copyDirectText('modalFromName', 'From Name')" class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-semibold shrink-0">Copy</button>
+                    </div>
+                    <div class="flex items-center justify-start bg-white dark:bg-slate-800/80 px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                        <div class="truncate pr-1">
+                            <span class="font-bold text-slate-400 text-[9px] uppercase block">From Email</span>
+                            <span id="modalFromEmail" class="font-mono text-slate-700 dark:text-slate-300 truncate block text-[11px]">--</span>
+                        </div>
+                        <button onclick="copyDirectText('modalFromEmail', 'From Email')" class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-semibold shrink-0">Copy</button>
+                    </div>
+                    <div class="flex items-center justify-between bg-white dark:bg-slate-800/80 px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                        <div class="truncate pr-1">
+                            <span class="font-bold text-slate-400 text-[9px] uppercase block">Account / Date</span>
+                            <span id="modalMetaBrief" class="font-semibold text-slate-700 dark:text-slate-200 truncate block text-[11px]">--</span>
+                        </div>
+                        <span id="modalSourceBadge" class="text-[9px] uppercase font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-1 py-0.5 rounded border border-purple-200 dark:border-purple-800 shrink-0">--</span>
+                    </div>
+                </div>
+
+                <!-- Row 2: Subject -->
+                <div class="flex items-center justify-start gap-2 bg-white dark:bg-slate-800/80 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                    <div class="flex items-center space-x-2 overflow-hidden">
+                        <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 shrink-0">Subject</span>
+                        <h2 id="modalSubject" class="font-bold text-slate-900 dark:text-white text-xs truncate">Select an Email</h2>
+                    </div>
+                    <button onclick="copyDirectText('modalSubject', 'Subject')" title="Copy Subject" class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded text-[10px] font-semibold shrink-0">Copy</button>
+                </div>
+
+                <!-- Row 3: Return-Path (Original vs Decoded Template) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                    <div class="flex items-center justify-start bg-white dark:bg-slate-800/80 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                        <div class="truncate pr-1">
+                            <span class="text-[9px] uppercase font-bold text-slate-400">Original Return-Path</span>
+                            <span id="modalReturnPath" class="font-mono text-slate-700 dark:text-slate-300 truncate block">--</span>
+                        </div>
+                        <button onclick="copyDirectText('modalReturnPath', 'Return-Path')" class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-semibold shrink-0">Copy</button>
+                    </div>
+                    <div class="flex items-center justify-start bg-white dark:bg-slate-800/80 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                        <div class="truncate pr-1">
+                            <span class="text-[9px] uppercase font-bold text-purple-600 dark:text-purple-400">Dynamic Return-Path Template</span>
+                            <span id="modalDecodedReturnPath" class="font-mono text-purple-700 dark:text-purple-300 truncate block">--</span>
+                        </div>
+                        <button onclick="copyDirectText('modalDecodedReturnPath', 'Dynamic Return-Path Template')" class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-semibold shrink-0">Copy</button>
+                    </div>
+                </div>
+
+                <!-- Row 4: Message-ID (Original vs Decoded Template) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                    <div class="flex items-center justify-start bg-white dark:bg-slate-800/80 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                        <div class="truncate pr-1">
+                            <span class="text-[9px] uppercase font-bold text-slate-400">Original Message-ID</span>
+                            <span id="modalMessageId" class="font-mono text-slate-700 dark:text-slate-300 truncate block">--</span>
+                        </div>
+                        <button onclick="copyDirectText('modalMessageId', 'Message-ID')" class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-semibold shrink-0">Copy</button>
+                    </div>
+                    <div class="flex items-center justify-start bg-white dark:bg-slate-800/80 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
+                        <div class="truncate pr-1">
+                            <span class="text-[9px] uppercase font-bold text-green-600 dark:text-green-400">Dynamic Message-ID Template</span>
+                            <span id="modalDecodedMessageId" class="font-mono text-green-700 dark:text-green-300 truncate block">--</span>
+                        </div>
+                        <button onclick="copyDirectText('modalDecodedMessageId', 'Dynamic Message-ID Template')" class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[9px] font-semibold shrink-0">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PREVIEW & EDITOR VIEWPORT -->
+            <div class="flex-1 relative overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
+                <div id="view-preview" class="absolute inset-0 bg-white dark:bg-slate-900">
+                    <iframe id="previewIframe" class="w-full h-full border-0 bg-white dark:bg-slate-900"></iframe>
+                </div>
+
+                <div id="view-editor" class="absolute inset-0 bg-white dark:bg-slate-900 hidden flex flex-col">
+                    <!-- FIND & REPLACE TOOLBAR -->
+                    <div id="findReplaceBar" class="hidden bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 p-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center space-x-2 flex-wrap">
+                            <div class="flex items-center space-x-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 shadow-xs">
+                                <i class="fa-solid fa-magnifying-glass text-slate-400 text-[10px]"></i>
+                                <input type="text" id="findInput" oninput="executeFind()" placeholder="Find..." class="bg-transparent outline-none text-xs w-28 text-slate-800 dark:text-slate-100">
+                            </div>
+                            <div class="flex items-center space-x-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 shadow-xs">
+                                <i class="fa-solid fa-pen text-slate-400 text-[10px]"></i>
+                                <input type="text" id="replaceInput" placeholder="Replace..." class="bg-transparent outline-none text-xs w-28 text-slate-800 dark:text-slate-100">
+                            </div>
+                            <span id="findMatchCount" class="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">0 matches</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <button onclick="findPreviousMatch()" class="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-semibold hover:bg-slate-50 transition" title="Previous Match"><i class="fa-solid fa-chevron-up text-[10px]"></i> Prev</button>
+                            <button onclick="findNextMatch()" class="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-semibold hover:bg-slate-50 transition" title="Next Match">Next <i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+                            <button onclick="replaceCurrentMatch()" class="px-2.5 py-1 bg-amber-600 text-white rounded font-semibold hover:bg-amber-700 transition">Replace</button>
+                            <button onclick="replaceAllMatches()" class="px-2.5 py-1 bg-purple-600 text-white rounded font-semibold hover:bg-purple-700 transition">Replace All</button>
+                            <button onclick="toggleFindReplaceBar()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white px-1"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="p-2 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-950">
+                        <span class="font-medium text-slate-500 dark:text-slate-400">Colorful Code Editor (Live edits sync directly)</span>
+                        <div class="flex items-center space-x-2">
+                            <span id="headSearchStatus" class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hidden"></span>
+                            <button onclick="applyEditorChanges()" class="px-3 py-1 bg-green-600 text-white rounded font-semibold hover:bg-green-700 shadow-xs">Update Preview</button>
+                        </div>
+                    </div>
+                    <div id="codeMirrorContainer" class="flex-1 relative overflow-hidden bg-slate-50 dark:bg-slate-950"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 dark:bg-slate-800 text-white px-4 py-2.5 rounded-lg shadow-2xl transition transform translate-y-20 opacity-0 flex items-center space-x-2 z-50 text-xs font-medium border border-slate-700">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage">Notification</span>
+    </div>
+
+    <!-- ACCOUNTS CONFIG MODAL -->
+    <div id="configModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-green-600 dark:text-green-400"></i>
+                    <span>Configure Yahoo Credentials</span>
+                </h3>
+                <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Enter your credentials in format: <code class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-600 dark:text-green-400 font-mono">imappassword, allMailSpotid</code> (One per line).</p>
+            
+            <textarea id="credentialsInput" rows="6" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-green-600 dark:focus:border-green-500 focus:bg-white dark:focus:bg-slate-900 transition" placeholder="imappassword1, spotid1@yahoo.com&#10;imappassword2, spotid2@yahoo.com&#10;imappassword3, spotid3@yahoo.com"></textarea>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="toggleConfigModal()" class="px-4 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-medium">Cancel</button>
+                <button onclick="saveCredentials()" class="px-4 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-xs">Save Credentials</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ADVANCED DYNAMIC MESSAGE ID & RETURN PATH DECODER ---
+        class DynamicMessageIdDecoder {
+    constructor() {
+        this.delimiterRegex = /([.\-_=+/?><&%#!])/g;
+    }
+
+    classifySegment(segment) {
+        if (/^\d{14}$/.test(segment)) {
+            return { type: "utime", value: segment, description: "14-digit UTC Timestamp" };
+        } else if (/^[0-9a-fA-F]+$/.test(segment)) {
+            const isUpper = segment === segment.toUpperCase();
+            const hexType = isUpper ? "uhex" : "hex";
+            return { type: `${hexType}${segment.length}`, value: segment, description: `${segment.length}-character Hexadecimal` };
+        } else if (/^\d+$/.test(segment)) {
+            return { type: `math${segment.length}`, value: segment, description: `${segment.length}-digit Numeric` };
+        } else if (/[a-zA-Z]/.test(segment) && /\d/.test(segment)) {
+            return { type: `mix${segment.length}`, value: segment, description: `${segment.length}-character Alphanumeric Mixed` };
+        } else {
+            return { type: `rand${segment.length}`, value: segment, description: `${segment.length}-character Random Token` };
+        }
+    }
+
+    decode(messageId) {
+        if (!messageId || typeof messageId !== 'string' || messageId.trim() === '' || messageId === 'N/A') {
+            return { template: 'N/A', domain: 'N/A', localPart: 'N/A', components: {} };
+        }
+
+        let cleanId = messageId.trim();
+        if (cleanId.startsWith("<") && cleanId.endsWith(">")) {
+            cleanId = cleanId.substring(1, cleanId.length - 1).trim();
+        }
+
+        const atIndex = cleanId.lastIndexOf('@');
+        if (atIndex === -1) {
+            return { domain: '', localPart: cleanId, template: cleanId, components: {} };
+        }
+
+        const localPart = cleanId.substring(0, atIndex);
+        const domain = cleanId.substring(atIndex + 1);
+
+        const rawTokens = localPart.split(this.delimiterRegex);
+        
+        let templateParts = [];
+        let components = {};
+
+        rawTokens.forEach((token) => {
+            if (!token) return;
+
+            if (this.delimiterRegex.test(token)) {
+                templateParts.push(token);
+                this.delimiterRegex.lastIndex = 0;
+            } else {
+                const classified = this.classifySegment(token);
+                const tokenKey = classified.type;
+
+                templateParts.push(`{${tokenKey}}`);
+                components[tokenKey] = {
+                    value: token,
+                    type: classified.description
+                };
+            }
+        });
+
+        const template = templateParts.join("") + "@" + domain;
+
+        return {
+            domain: domain,
+            localPart: localPart,
+            template: template,
+            components: components
+        };
+    }
+}
+
+        const decoder = new DynamicMessageIdDecoder();
+
+        let fetchedEmails = [];
+        let displayedFilteredEmails = [];
+        let activeIndex = null;
+        let cmEditor = null;
+        let activeSearchHighlightMark = null;
+
+        let isSyncRunning = false;
+        let countdownSeconds = 300;
+        let activeSourceFilters = new Set();
+        const CHUNK_SIZE = 7;
+        const defaultCreds = "imappassword1, allMailSpotid1@yahoo.com\nimappassword2, allMailSpotid2@yahoo.com\nimappassword3, allMailSpotid3@yahoo.com";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Get local date directly without UTC conversion shift
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const localToday = `${year}-${month}-${day}`;
+
+            document.getElementById('dateFrom').value = localToday;
+            document.getElementById('dateTo').value = localToday;
+
+            if (!localStorage.getItem('yahoo_creds')) {
+                localStorage.setItem('yahoo_creds', defaultCreds);
+            }
+            document.getElementById('credentialsInput').value = localStorage.getItem('yahoo_creds');
+
+            loadSavedFilters();
+            initTheme();
+            updateAccountBadge();
+            initCodeMirror();
+
+            startFreshSync();
+            initTenMinuteScheduler();
+            initKeyboardNavigation();
+        });
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('allmailspot_theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').className = "fa-solid fa-sun";
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('themeIcon').className = "fa-solid fa-moon";
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('allmailspot_theme', isDark ? 'dark' : 'light');
+            document.getElementById('themeIcon').className = isDark ? "fa-solid fa-sun" : "fa-solid fa-moon";
+            
+            if (cmEditor) {
+                cmEditor.setOption("theme", isDark ? "dracula" : "default");
+            }
+        }
+
+        function initKeyboardNavigation() {
+            window.addEventListener('keydown', (e) => {
+                const overlay = document.getElementById('inspectorOverlay');
+                if (overlay.classList.contains('hidden')) return;
+                const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    navigateMail('prev');
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    navigateMail('next');
+                } else if (e.key === 'Escape') {
+                    closeInspector();
+                }
+            });
+        }
+
+        function initTenMinuteScheduler() {
+            setInterval(() => {
+                countdownSeconds--;
+                if (countdownSeconds <= 0) {
+                    countdownSeconds = 300;
+                    startContinuousSync();
+                }
+                updateCountdownDisplay();
+            }, 1000);
+        }
+
+        function updateCountdownDisplay() {
+            const mins = Math.floor(countdownSeconds / 60);
+            const secs = countdownSeconds % 60;
+            const formatted = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            document.getElementById('timerCountdown').textContent = `Auto-syncing in ${formatted}`;
+        }
+
+        let syncSessionMemory = {
+            dateFrom: '',
+            dateTo: '',
+            leftOff: 0,
+            bottomLeftOff: 0
+        };
+
+        
+
+        function startFreshSync() {
+            // Read date values as raw literal strings to prevent local timezone offset shifts
+            const rawFrom = document.getElementById('dateFrom').value; // e.g. "2026-11-12"
+            const rawTo = document.getElementById('dateTo').value;     // e.g. "2026-11-12"
+
+            syncSessionMemory.dateFrom = rawFrom;
+            syncSessionMemory.dateTo = rawTo;
+
+            // Reset leftOff and bottomLeftOff with "Sync"
+            syncSessionMemory.leftOff = 0;
+            syncSessionMemory.bottomLeftOff = 0;
+
+            // Remove older fetched items and clear view
+            fetchedEmails = [];
+            activeSourceFilters.clear();
+            localStorage.removeItem('allmailspot_saved_filters');
+            
+            renderFilteredGrids();
+
+            // Trigger continuous sync with the newly locked session dates
+            startContinuousSync();
+        }
+
+        async function startContinuousSync() {
+            if (isSyncRunning) return;
+            const accounts = parseStoredCredentials();
+            if (accounts.length === 0) return;
+
+            // Fallback if triggered without prior memory
+            if (!syncSessionMemory.dateFrom) {
+                syncSessionMemory.dateFrom = document.getElementById('dateFrom').value;
+                syncSessionMemory.dateTo = document.getElementById('dateTo').value;
+            }
+
+            isSyncRunning = true;
+            const spinner = document.getElementById('refreshSpinner');
+            const syncBadge = document.getElementById('syncStatusBadge');
+
+            spinner.classList.add('fa-spin');
+            syncBadge.classList.remove('hidden');
+
+            let hasMore = true;
+
+            try {
+                while (hasMore) {
+                    const res = await fetch('/api/fetch-chunk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            accounts, 
+                            date: syncSessionMemory.dateFrom, 
+                            date_to: syncSessionMemory.dateTo,
+                            offset: syncSessionMemory.leftOff, 
+                            limit: CHUNK_SIZE 
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (data.status === 'success' && data.emails.length > 0) {
+                        data.emails.forEach(newEmail => {
+                            if (!fetchedEmails.some(e => e.id === newEmail.id)) {
+                                fetchedEmails.push(newEmail);
+                                activeSourceFilters.add(newEmail.source);
+                            }
+                        });
+
+                        saveFiltersToStorage();
+                        updateSourceFilterUI();
+                        renderFilteredGrids();
+
+                        // Update leftOff and bottomLeftOff with every continuous sync chunk
+                        syncSessionMemory.leftOff += CHUNK_SIZE;
+                        syncSessionMemory.bottomLeftOff = syncSessionMemory.leftOff;
+
+                        if (data.emails.length < CHUNK_SIZE) {
+                            hasMore = false;
+                        }
+                        await new Promise(r => setTimeout(r, 300));
+                    } else {
+                        hasMore = false;
+                    }
+                }
+            } catch (err) {
+                console.error("Continuous Sync Engine Error:", err);
+            } finally {
+                isSyncRunning = false;
+                countdownSeconds = 300;
+                spinner.classList.remove('fa-spin');
+                syncBadge.classList.add('hidden');
+            }
+        }
+
+        function loadSavedFilters() {
+            const saved = localStorage.getItem('allmailspot_saved_filters');
+            if (saved) {
+                try {
+                    activeSourceFilters = new Set(JSON.parse(saved));
+                } catch(e) {
+                    activeSourceFilters = new Set();
+                }
+            }
+        }
+
+        function saveFiltersToStorage() {
+            localStorage.setItem('allmailspot_saved_filters', JSON.stringify([...activeSourceFilters]));
+        }
+
+        function updateSourceFilterUI() {
+            const container = document.getElementById('sourceFiltersContainer');
+            const labelHtml = '<span class="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1"><i class="fa-solid fa-filter mr-1 text-green-600"></i>Sources:</span>';
+            const allSources = [...new Set(fetchedEmails.map(e => e.source))].sort();
+            
+            if (!localStorage.getItem('allmailspot_saved_filters') && activeSourceFilters.size === 0 && allSources.length > 0) {
+                allSources.forEach(s => activeSourceFilters.add(s));
+                saveFiltersToStorage();
+            }
+
+            let checkboxesHtml = labelHtml;
+            allSources.forEach(source => {
+                const isChecked = activeSourceFilters.has(source) ? 'checked' : '';
+                checkboxesHtml += `
+                    <label class="inline-flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded text-[11px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <input type="checkbox" value="${source}" ${isChecked} onchange="toggleSourceFilter('${source}', this.checked)" class="rounded text-green-600 focus:ring-green-500 h-3 w-3">
+                        <span class="text-slate-700 dark:text-slate-200 font-medium">${source}</span>
+                    </label>
+                `;
+            });
+
+            container.innerHTML = checkboxesHtml;
+        }
+
+        function toggleSourceFilter(source, isChecked) {
+            if (isChecked) {
+                activeSourceFilters.add(source);
+            } else {
+                activeSourceFilters.delete(source);
+            }
+            saveFiltersToStorage();
+            renderFilteredGrids();
+        }
+
+        function renderFilteredGrids() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            displayedFilteredEmails = fetchedEmails.filter(mail => {
+                if (!activeSourceFilters.has(mail.source)) return false;
+
+                if (searchQuery) {
+                    const matchSubject = mail.subject.toLowerCase().includes(searchQuery);
+                    const matchFromName = mail.from_name.toLowerCase().includes(searchQuery);
+                    const matchFromEmail = mail.from_email.toLowerCase().includes(searchQuery);
+                    const matchAccount = mail.account.toLowerCase().includes(searchQuery);
+                    return matchSubject || matchFromName || matchFromEmail || matchAccount;
+                }
+                return true;
+            });
+
+            renderGrids(displayedFilteredEmails);
+        }
+
+        function renderGrids(emails) {
+            const mainGrid = document.getElementById('emailGrid');
+            const sideGrid = document.getElementById('sideEmailGrid');
+            const emptyState = document.getElementById('emptyState');
+            document.getElementById('mailCount').textContent = emails.length;
+
+            mainGrid.innerHTML = '';
+            sideGrid.innerHTML = '';
+
+            if (emails.length === 0 && !isSyncRunning) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            emails.forEach((mail) => {
+                const mainCard = createCardElement(mail);
+                mainGrid.appendChild(mainCard);
+
+                const sideCard = createCardElement(mail, true);
+                sideGrid.appendChild(sideCard);
+            });
+        }
+
+        function createCardElement(mail, isSide = false) {
+            const card = document.createElement('div');
+            const isActive = isSide && activeIndex !== null && displayedFilteredEmails[activeIndex]?.id === mail.id;
+
+            card.className = `bg-white dark:bg-slate-900 border ${isActive ? 'border-green-600 ring-2 ring-green-600/20 shadow-md' : 'border-slate-200 dark:border-slate-800 hover:border-green-400 dark:hover:border-green-500'} rounded-xl p-2.5 cursor-pointer transition flex flex-col justify-between shadow-xs hover:shadow-md group`;
+            card.onclick = () => selectCardById(mail.id);
+
+            card.innerHTML = `
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[120px]" title="${escapeHTML(mail.from_name)}">${escapeHTML(mail.from_name)}</span>
+                        <span class="text-[9px] uppercase font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950 px-1 py-0.5 rounded border border-green-100 dark:border-green-900">${escapeHTML(mail.source)}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate" title="${escapeHTML(mail.from_email)}">${escapeHTML(mail.from_email)}</div>
+                    <h4 class="font-semibold text-slate-700 dark:text-slate-200 text-xs line-clamp-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition" title="${escapeHTML(mail.subject)}">${escapeHTML(mail.subject)}</h4>
+                </div>
+
+                <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
+                    <span class="truncate max-w-[90px]">${escapeHTML(mail.account.split('@')[0])}</span>
+                    <i class="fa-solid fa-chevron-right text-slate-300 dark:text-slate-700 group-hover:text-green-600 dark:group-hover:text-green-400 transition"></i>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function selectCardById(mailId) {
+            const index = displayedFilteredEmails.findIndex(e => e.id === mailId);
+            if (index === -1) return;
+            activeIndex = index;
+            const email = displayedFilteredEmails[index];
+
+            document.getElementById('modalFromName').textContent = email.from_name;
+            document.getElementById('modalFromEmail').textContent = email.from_email;
+            document.getElementById('modalSubject').textContent = email.subject;
+            
+            // Safely parse and format date string for Account / Date metadata header
+            let formattedDate = email.date || '';
+            try {
+                if (formattedDate) {
+                    const parsedDate = new Date(email.date);
+                    if (!isNaN(parsedDate)) {
+                        formattedDate = parsedDate.toLocaleString();
+                    }
+                }
+            } catch (e) {
+                formattedDate = email.date;
+            }
+
+            const shortAccount = email.account ? email.account.split('@')[0] : 'Account';
+            document.getElementById('modalMetaBrief').innerHTML = `${shortAccount} &bull; ${escapeHTML(formattedDate)}`;
+            document.getElementById('modalSourceBadge').textContent = email.source;
+
+            // Original & Dynamic Decoded Return-Path
+            const rawReturnPath = email.return_path || 'N/A';
+            document.getElementById('modalReturnPath').textContent = rawReturnPath;
+            const decodedReturnPathObj = decoder.decode(rawReturnPath);
+            document.getElementById('modalDecodedReturnPath').textContent = decodedReturnPathObj.template;
+
+            // Original & Dynamic Decoded Message-ID
+            const rawMsgId = email.message_id || 'N/A';
+            document.getElementById('modalMessageId').textContent = rawMsgId;
+            const decodedMsgIdObj = decoder.decode(rawMsgId);
+            document.getElementById('modalDecodedMessageId').textContent = decodedMsgIdObj.template;
+
+            cmEditor.setValue(email.content);
+            updateIframe(email.content);
+
+            renderFilteredGrids();
+
+            document.getElementById('inspectorOverlay').classList.remove('hidden');
+            setTimeout(() => cmEditor.refresh(), 50);
+
+            updateInspectorStarButtonState();
+        }
+
+        function navigateMail(direction) {
+            if (displayedFilteredEmails.length === 0 || activeIndex === null) return;
+
+            if (direction === 'prev') {
+                activeIndex = activeIndex > 0 ? activeIndex - 1 : displayedFilteredEmails.length - 1;
+            } else if (direction === 'next') {
+                activeIndex = activeIndex < displayedFilteredEmails.length - 1 ? activeIndex + 1 : 0;
+            }
+
+            const targetMail = displayedFilteredEmails[activeIndex];
+            selectCardById(targetMail.id);
+        }
+
+        function copyStringToClipboard(text, successMessage) {
+            if (!text) return;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(successMessage);
+                }).catch(() => {
+                    fallbackCopy(text, successMessage);
+                });
+            } else {
+                fallbackCopy(text, successMessage);
+            }
+        }
+
+        function fallbackCopy(text, successMessage) {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.left = "-9999px";
+            textarea.style.top = "-9999px";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) showToast(successMessage);
+                else showToast('Unable to copy text.');
+            } catch (err) {
+                showToast('Failed to copy text.');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function copyHeadContent() {
+            const code = cmEditor.getValue();
+            const lowerCode = code.toLowerCase();
+            const headEndIndex = lowerCode.indexOf('</head>');
+
+            let headText = "";
+            if (headEndIndex !== -1) {
+                headText = code.substring(0, headEndIndex + 7);
+            } else {
+                const match = code.match(/[\s\S]*?<\/head>/i);
+                headText = match ? match[0] : code.substring(0, 2500);
+            }
+
+            copyStringToClipboard(headText, 'Copied content up to </head> tag!');
+        }
+
+        function copyDirectText(elementId, label) {
+            const text = document.getElementById(elementId).textContent;
+            copyStringToClipboard(text, `Copied ${label}!`);
+        }
+
+        function disableEmailLinks() {
+            let code = cmEditor.getValue();
+            const tldRegex = /\.(com|net|co|ai|io|app|shop|store|org|me|design|blog|info|in|biz|us|uk|xyz|dev|site|tech|edu|gov|png|jpg|jpeg|gif|svg|css|js|nz|nl)\b/gi;
+            code = code.replace(tldRegex, '$1');
+
+            cmEditor.setValue(code);
+            updateIframe(code);
+            showToast('Removed all dots (.) from links and extensions!');
+        }
+
+        function clearTitleContent() {
+            let code = cmEditor.getValue();
+    
+            // Matches <title>...</title> case-insensitively and replaces the inner content with an empty string
+            const titleRegex = /<title\b[^>]*>([\s\S]*?)<\/title>/gi;
+            code = code.replace(titleRegex, '<title></title>');
+
+            cmEditor.setValue(code);
+            updateIframe(code);
+            showToast('Cleared content inside title tags!');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2000);
+        }
+
+        function initCodeMirror() {
+            const isDark = document.documentElement.classList.contains('dark');
+            cmEditor = CodeMirror(document.getElementById('codeMirrorContainer'), {
+                mode: 'htmlmixed',
+                lineNumbers: true,
+                styleActiveLine: true,
+                autoCloseTags: true,
+                autoCloseBrackets: true,
+                tabSize: 2,
+                indentUnit: 2,
+                lineWrapping: true,
+                theme: isDark ? 'dracula' : 'default'
+            });
+        }
+
+        function toggleConfigModal() {
+            document.getElementById('configModal').classList.toggle('hidden');
+        }
+
+        function updateAccountBadge() {
+            const raw = localStorage.getItem('yahoo_creds') || '';
+            const count = raw.split('\n').filter(line => line.trim() !== '').length;
+            document.getElementById('accountCountBadge').textContent = count;
+        }
+
+        function saveCredentials() {
+            const val = document.getElementById('credentialsInput').value;
+            localStorage.setItem('yahoo_creds', val);
+            updateAccountBadge();
+            toggleConfigModal();
+            startFreshSync();
+        }
+
+        function parseStoredCredentials() {
+            const raw = localStorage.getItem('yahoo_creds') || '';
+            const lines = raw.split('\n');
+            const parsed = [];
+            for (let line of lines) {
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    parsed.push({
+                        app_password: parts[0].trim(),
+                        spot_id: parts[1].trim()
+                    });
+                }
+            }
+            return parsed;
+        }
+
+        function closeInspector() {
+            document.getElementById('inspectorOverlay').classList.add('hidden');
+            activeIndex = null;
+        }
+
+        function switchTab(tab) {
+            const previewView = document.getElementById('view-preview');
+            const editorView = document.getElementById('view-editor');
+            const tabPreviewBtn = document.getElementById('tab-preview');
+            const tabEditorBtn = document.getElementById('tab-editor');
+
+            if (tab === 'preview') {
+                previewView.classList.remove('hidden');
+                editorView.classList.add('hidden');
+                tabPreviewBtn.className = "px-3 py-1 rounded-md bg-green-600 text-white font-semibold transition text-xs";
+                tabEditorBtn.className = "px-3 py-1 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold transition text-xs";
+            } else {
+                previewView.classList.add('hidden');
+                editorView.classList.remove('hidden');
+                tabEditorBtn.className = "px-3 py-1 rounded-md bg-green-600 text-white font-semibold transition text-xs";
+                tabPreviewBtn.className = "px-3 py-1 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold transition text-xs";
+                cmEditor.refresh();
+            }
+        }
+
+        function toggleFindReplaceBar() {
+            switchTab('editor');
+            const bar = document.getElementById('findReplaceBar');
+            bar.classList.toggle('hidden');
+            if (!bar.classList.contains('hidden')) {
+                document.getElementById('findInput').focus();
+            }
+        }
+
+
+        // Externally modified functioning "find Replace"
+
+        // Start\\>\\>
+
+        let searchMarkers = [];
+
+// Clear existing highlight markers from the editor
+function clearSearchMarks() {
+    searchMarkers.forEach(marker => marker.clear());
+    searchMarkers = [];
+}
+
+// Mark all matches in the document (active one gets green, others get pink/purple)
+function markAllMatches(query, activeFrom = null, activeTo = null) {
+    clearSearchMarks();
+    if (!query) return;
+
+    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+    while (cursor.findNext()) {
+        const from = cursor.from();
+        const to = cursor.to();
+
+        // Check if this specific match is the currently active one
+        const isActive = activeFrom && activeTo && 
+            from.line === activeFrom.line && from.ch === activeFrom.ch &&
+            to.line === activeFrom.line && to.ch === activeFrom.ch;
+
+        const className = isActive ? 'cm-search-match-active' : 'cm-search-match-other';
+        const marker = cmEditor.markText(from, to, { className: className });
+        searchMarkers.push(marker);
+    }
+}
+
+function executeFind() {
+    const query = document.getElementById('findInput').value;
+    const countEl = document.getElementById('findMatchCount');
+    clearSearchMarks();
+
+    if (!query) {
+        countEl.textContent = '0 matches';
+        return;
+    }
+
+    let count = 0;
+    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+    while (cursor.findNext()) {
+        count++;
+    }
+
+    countEl.textContent = `${count} matches`;
+    if (count > 0) {
+        findNextMatch();
+    }
+}
+
+function findNextMatch() {
+    const query = document.getElementById('findInput').value;
+    if (!query) return;
+
+    let cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
+    
+    if (!cursor.findNext()) {
+        // Wrap around to the beginning if nothing found forward
+        cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+        if (!cursor.findNext()) return;
+    }
+
+    cmEditor.setSelection(cursor.from(), cursor.to());
+    cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
+    
+    // Re-mark all matches and highlight the current one in green
+    markAllMatches(query, cursor.from(), cursor.to());
+}
+
+function findPreviousMatch() {
+    const query = document.getElementById('findInput').value;
+    if (!query) return;
+
+    let cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
+    
+    if (!cursor.findPrevious()) {
+        // Wrap around to the end if nothing found backward
+        const lastLine = cmEditor.lastLine();
+        const lastCh = cmEditor.getLine(lastLine).length;
+        cursor = cmEditor.getSearchCursor(query, { line: lastLine, ch: lastCh }, { caseFold: true });
+        if (!cursor.findPrevious()) return;
+    }
+
+    cmEditor.setSelection(cursor.from(), cursor.to());
+    cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
+    
+    // Re-mark all matches and highlight the current one in green
+    markAllMatches(query, cursor.from(), cursor.to());
+}
+
+function replaceCurrentMatch() {
+    const query = document.getElementById('findInput').value;
+    const replaceVal = document.getElementById('replaceInput').value || '';
+    if (!query) return;
+
+    const sel = cmEditor.getSelection();
+    if (sel.toLowerCase() === query.toLowerCase()) {
+        cmEditor.replaceSelection(replaceVal);
+        executeFind();
+    } else {
+        findNextMatch();
+    }
+}
+
+function replaceAllMatches() {
+    const query = document.getElementById('findInput').value;
+    const replaceVal = document.getElementById('replaceInput').value || '';
+    if (!query) return;
+
+    let count = 0;
+    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+    while (cursor.findNext()) {
+        cursor.replace(replaceVal);
+        count++;
+    }
+    showToast(`Replaced ${count} occurrences!`);
+    executeFind();
+}
+
+
+        // End//>//>
+        
+
+        function findHeadTag() {
+            switchTab('editor');
+
+            if (activeSearchHighlightMark) {
+                activeSearchHighlightMark.clear();
+                activeSearchHighlightMark = null;
+            }
+
+            const cursor = cmEditor.getSearchCursor('</head>', { line: 0, ch: 0 }, { caseFold: true });
+            const statusEl = document.getElementById('headSearchStatus');
+
+            if (cursor.findNext()) {
+                cmEditor.setSelection(cursor.from(), cursor.to());
+                cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
+                activeSearchHighlightMark = cmEditor.markText(cursor.from(), cursor.to(), { className: 'cm-search-highlight' });
+                
+                statusEl.textContent = 'Found </head> tag!';
+                statusEl.classList.remove('hidden');
+            } else {
+                statusEl.textContent = 'No </head> tag found';
+                statusEl.classList.remove('hidden');
+            }
+
+            setTimeout(() => statusEl.classList.add('hidden'), 3000);
+        }
+
+        function updateIframe(htmlContent) {
+            const iframe = document.getElementById('previewIframe');
+            iframe.srcdoc = htmlContent;
+        }
+
+        function applyEditorChanges() {
+            const newContent = cmEditor.getValue();
+            updateIframe(newContent);
+            switchTab('preview');
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+    </script><script>
+        // Generates a bulletproof unique key for each email item
+function getUniqueMailKey(mail) {
+    if (!mail) return null;
+    return String(mail.id || mail.uid || `${mail.from_email}_${mail.subject}_${mail.date || ''}`);
+}
+
+// Safely extracts ONLY the <head> section from raw or actively edited content
+function extractHeadOnly(html) {
+    if (!html) return '<head>\n<meta charset="utf-8">\n</head>';
+    const headMatch = html.match(/<head\b[^>]*>([\s\S]*?)<\/head\s*>/i);
+    if (headMatch) return headMatch[0];
+    const bodySplit = html.split(/<body\b/i)[0];
+    if (bodySplit && bodySplit !== html) return `<head>\n${bodySplit}\n</head>`;
+    return `<head>\n${html}\n</head>`;
+}
+
+// Toggles the star state and syncs to Head Mixer's DB independently
+function toggleStarEmail(mailId, event) {
+    if (event) event.stopPropagation();
+    const mail = fetchedEmails.find(e => getUniqueMailKey(e) === String(mailId) || String(e.id) === String(mailId));
+    if (!mail) return;
+
+    const uniqueKey = getUniqueMailKey(mail);
+    let rawContent = mail.content;
+    
+    // Grabs active text from your code editor if it's currently open and edited
+    if (activeIndex !== null && displayedFilteredEmails[activeIndex] && getUniqueMailKey(displayedFilteredEmails[activeIndex]) === uniqueKey && typeof cmEditor !== 'undefined' && cmEditor) {
+        rawContent = cmEditor.getValue();
+    }
+
+    const cleanHead = extractHeadOnly(rawContent);
+    let starred = JSON.parse(localStorage.getItem('allmailspot_starred_heads') || '{}');
+    const isStarred = !starred[uniqueKey];
+    
+    if (isStarred) {
+        starred[uniqueKey] = true;
+    } else {
+        delete starred[uniqueKey];
+    }
+    localStorage.setItem('allmailspot_starred_heads', JSON.stringify(starred));
+
+    const headName = `${mail.from_name} + ${mail.source}`.substring(0, 140);
+    saveHeadToHeadMixerDB(uniqueKey, headName, cleanHead, isStarred);
+    
+    if (typeof renderFilteredGrids === 'function') renderFilteredGrids();
+    updateInspectorStarButtonState();
+}
+
+function toggleStarActiveEmail() {
+    if (activeIndex === null || !displayedFilteredEmails[activeIndex]) return;
+    const uniqueKey = getUniqueMailKey(displayedFilteredEmails[activeIndex]);
+    toggleStarEmail(uniqueKey);
+}
+
+// Updates the Star button appearance independently per email
+function updateInspectorStarButtonState() {
+    const icon = document.getElementById('inspectorStarIcon');
+    const text = document.getElementById('inspectorStarText');
+    if (!icon || !text) return;
+
+    if (activeIndex === null || !displayedFilteredEmails[activeIndex]) {
+        icon.className = 'fa-regular fa-star text-amber-600 dark:text-amber-400';
+        text.textContent = 'Star Head';
+        return;
+    }
+
+    const uniqueKey = getUniqueMailKey(displayedFilteredEmails[activeIndex]);
+    const starred = JSON.parse(localStorage.getItem('allmailspot_starred_heads') || '{}');
+    const isStarred = !!starred[uniqueKey];
+
+    icon.className = isStarred ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star text-amber-600 dark:text-amber-400';
+    text.textContent = isStarred ? 'Starred in Mixer' : 'Star Head';
+}
+
+// Writes directly to Head Mixer's IndexedDB storage without touching your app's main storage
+function saveHeadToHeadMixerDB(id, headName, headHtml, isStarred) {
+    try {
+        const request = indexedDB.open('envelope-head-library', 1);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('heads')) {
+                db.createObjectStore('heads', { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = (e) => {
+            const db = e.target.result;
+            const tx = db.transaction('heads', 'readwrite');
+            const store = tx.objectStore('heads');
+            if (isStarred) {
+                store.put({
+                    id: id,
+                    name: headName,
+                    html: headHtml,
+                    doctype: '<!DOCTYPE html>',
+                    liked: false,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                });
+                if (typeof showToast === 'function') showToast('Saved head to Head Mixer storage!');
+            } else {
+                store.delete(id);
+                if (typeof showToast === 'function') showToast('Removed head from Head Mixer storage.');
+            }
+        };
+    } catch (err) {
+        console.error("Head Mixer DB error:", err);
+    }
+}
+    </script>
+</body>
+</html>

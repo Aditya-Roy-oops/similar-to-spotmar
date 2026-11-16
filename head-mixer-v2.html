@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Head Mixer — Token-Level HTML Head Synthesizer</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'Consolas', 'Monaco', 'monospace'],
+                    },
+                    colors: {
+                        navy: {
+                            950: '#0b0f19',
+                            900: '#111827',
+                            850: '#161e2e',
+                            800: '#1e293b',
+                            700: '#2a374a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CodeMirror 5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/matchesonscrollbar.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        html.light ::-webkit-scrollbar-track { background: #f1f5f9; }
+        html.light ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        html.light ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        html.dark ::-webkit-scrollbar-track { background: #0f172a; }
+        html.dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .CodeMirror {
+            height: 100%;
+            font-family: 'Fira Code', Consolas, Monaco, monospace;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        html.light .CodeMirror { background-color: #ffffff; color: #0f172a; }
+        html.light .CodeMirror-gutters { background-color: #f8fafc; border-right: 1px solid #e2e8f0; }
+        html.light .CodeMirror-linenumber { color: #94a3b8; padding: 0 8px 0 4px; }
+        html.light .CodeMirror-activeline-background { background: #f1f5f9; }
+        html.light .CodeMirror-selected { background-color: #bfdbfe !important; }
+        html.light .CodeMirror-cursor { border-left: 1.5px solid #0f172a; }
+
+        html.dark .CodeMirror { background-color: #0d1320; color: #e2e8f0; }
+        html.dark .CodeMirror-gutters { background-color: #111827; border-right: 1px solid #1e293b; }
+        html.dark .CodeMirror-linenumber { color: #64748b; padding: 0 8px 0 4px; }
+        html.dark .CodeMirror-activeline-background { background: #1e293b80; }
+        html.dark .CodeMirror-selected { background-color: #2563eb44 !important; }
+        html.dark .CodeMirror-cursor { border-left: 1.5px solid #60a5fa; }
+
+        .cm-search-match { background-color: #fef08a; color: #0f172a !important; outline: 1px solid #eab308; border-radius: 2px; }
+
+        .device-desktop { width: 100%; height: 100%; border-radius: 0; }
+        .device-tablet { width: 768px; height: 95%; max-width: 100%; border-radius: 14px; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.35); border: 10px solid #334155; }
+        .device-mobile { width: 375px; height: 88%; max-width: 100%; border-radius: 22px; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.35); border: 10px solid #334155; }
+
+        .nav-pill-active { border-left: 3px solid #60a5fa; }
+        html.dark .nav-pill-active {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.22) 0%, rgba(30, 41, 59, 0.75) 100%);
+            box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.35);
+            color: #ffffff;
+        }
+        html.light .nav-pill-active {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.12) 0%, rgba(239, 246, 255, 0.9) 100%);
+            box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.3);
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-navy-950 text-slate-800 dark:text-slate-200 min-h-screen font-sans antialiased transition-colors duration-200 flex flex-col lg:flex-row">
+
+    <!-- LEFT NAVIGATION SIDEBAR -->
+    <aside class="w-full lg:w-64 shrink-0 bg-white dark:bg-[#131926] border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800/90 flex flex-col justify-between z-30">
+        <div>
+            <div class="px-5 py-4 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600/15 dark:bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-sm font-bold tracking-tight text-slate-900 dark:text-white leading-none">Head Mixer</h1>
+                        <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400">v2.0 Modular</span>
+                    </div>
+                </div>
+
+                <button onclick="toggleTheme()" id="theme-toggle-btn" title="Toggle Dark / Light Theme"
+                    class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-amber-300 transition flex items-center justify-center">
+                    <i id="theme-icon" class="fa-solid fa-sun text-xs"></i>
+                </button>
+            </div>
+
+            <nav class="p-3 flex lg:flex-col gap-1.5 overflow-x-auto">
+                <button onclick="navigatePage('generate')" id="nav-generate"
+                    class="nav-pill-active flex-1 lg:flex-none flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition text-left whitespace-nowrap">
+                    <span class="flex items-center space-x-3">
+                        <i class="fa-regular fa-envelope text-base w-4 text-center"></i>
+                        <span>Generate</span>
+                    </span>
+                </button>
+
+                <button onclick="navigatePage('favorites')" id="nav-favorites"
+                    class="flex-1 lg:flex-none flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition text-left whitespace-nowrap">
+                    <span class="flex items-center space-x-3">
+                        <i class="fa-regular fa-heart text-base w-4 text-center"></i>
+                        <span>Favorites</span>
+                    </span>
+                    <span id="nav-favorites-count" class="ml-3 text-xs font-mono font-semibold text-slate-500 dark:text-slate-400">0</span>
+                </button>
+
+                <button onclick="navigatePage('add-heads')" id="nav-add-heads"
+                    class="flex-1 lg:flex-none flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition text-left whitespace-nowrap">
+                    <span class="flex items-center space-x-3">
+                        <i class="fa-regular fa-square-plus text-base w-4 text-center"></i>
+                        <span>Add heads</span>
+                    </span>
+                    <span id="nav-library-count" class="ml-3 text-xs font-mono font-semibold text-slate-500 dark:text-slate-400">0</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="hidden lg:block p-4 border-t border-slate-200/80 dark:border-slate-800/80 text-[11px] text-slate-500 dark:text-slate-400 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Library DB</span>
+                <span class="font-mono text-slate-700 dark:text-slate-300">IndexedDB</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>Favorites DB</span>
+                <span class="font-mono text-slate-700 dark:text-slate-300">Cookie Store</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- PAGE 1: GENERATE -->
+            <section id="page-generate" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>Token-Level &lt;head&gt; Synthesizer</span>
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">Markov + AST Blend</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Select source heads from <code class="font-mono text-xs px-1 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800">envelope-head-library</code> to tokenize and blend.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <div class="lg:col-span-7 bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+                        <div class="p-3.5 sm:px-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-navy-850 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center space-x-3">
+                                <label class="inline-flex items-center space-x-2 cursor-pointer select-none">
+                                    <input type="checkbox" id="select-all-heads" onchange="toggleSelectAllHeads(this.checked)"
+                                        class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-800">
+                                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Select All</span>
+                                </label>
+                                <span class="text-slate-300 dark:text-slate-700">|</span>
+                                <span id="selected-head-count" class="text-xs font-mono font-medium text-blue-600 dark:text-blue-400">Selected: 0 / 0</span>
+                            </div>
+                            <div class="relative flex-1 sm:flex-initial sm:w-60">
+                                <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-3 top-1/2 -translate-y-1/2"></i>
+                                <input type="text" id="generate-search-input" oninput="renderGenerateHeadList()" placeholder="Search heads..."
+                                    class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div id="generate-head-list" class="p-2.5 max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/70 space-y-1"></div>
+                    </div>
+
+                    <div class="lg:col-span-5 bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5 flex flex-col justify-between space-y-5">
+                        <div class="space-y-4">
+                            <!-- Format Options -->
+                            <div class="space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Format Options</span>
+                                    <span class="text-[11px] font-mono text-slate-400">Output Serializer</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="flex items-start p-2.5 rounded-xl border cursor-pointer transition border-blue-500/50 bg-blue-500/5 dark:bg-blue-500/10" id="fmt-card-irregular">
+                                        <input type="radio" name="formatMode" value="irregular" checked onchange="updateFormatRadioUI()" class="mt-0.5 text-blue-600 focus:ring-blue-500">
+                                        <div class="ml-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-semibold text-slate-900 dark:text-white">Irregularity Options</span>
+                                                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-600 text-white">Default</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Mixed proper &amp; zero indentation with strict token + line bounds.</p>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-start p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition" id="fmt-card-proper">
+                                        <input type="radio" name="formatMode" value="proper" onchange="updateFormatRadioUI()" class="mt-0.5 text-blue-600 focus:ring-blue-500">
+                                        <div class="ml-3">
+                                            <span class="text-xs font-semibold text-slate-900 dark:text-white block">Proper Indentations</span>
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Clean, deterministic 2-space AST nested formatting (Line bounds active).</p>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-start p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition" id="fmt-card-none">
+                                        <input type="radio" name="formatMode" value="none" onchange="updateFormatRadioUI()" class="mt-0.5 text-blue-600 focus:ring-blue-500">
+                                        <div class="ml-3">
+                                            <span class="text-xs font-semibold text-slate-900 dark:text-white block">No Indentations</span>
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Flush-left compact zero-indentation stream (Token bounds active).</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Synthesis Parameters: Tokens & Lines -->
+                            <div class="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Synthesis Bounds</span>
+                                    <span class="text-[11px] font-mono text-blue-500">Deep Token Engine</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <!-- No. of Tokens -->
+                                    <div id="tokens-control-box" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 transition-opacity">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <label class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">No. of Tokens</label>
+                                            <span id="tokens-status-tag" class="text-[10px] font-mono text-slate-400">100–200</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1.5">
+                                            <input type="number" id="token-min" value="100" min="15" max="3000"
+                                                oninput="syncBounds('token', 'min')" onchange="syncBounds('token', 'min')"
+                                                class="w-full px-2 py-1 text-xs font-mono rounded-lg bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-40 disabled:cursor-not-allowed" title="Minimum Tokens">
+                                            <span class="text-xs text-slate-400">–</span>
+                                            <input type="number" id="token-max" value="200" min="15" max="3000"
+                                                oninput="syncBounds('token', 'max')" onchange="syncBounds('token', 'max')"
+                                                class="w-full px-2 py-1 text-xs font-mono rounded-lg bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-40 disabled:cursor-not-allowed" title="Maximum Tokens">
+                                        </div>
+                                    </div>
+
+                                    <!-- No. of Lines of Code -->
+                                    <div id="lines-control-box" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 transition-opacity">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <label class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">No. of Lines</label>
+                                            <span id="lines-status-tag" class="text-[10px] font-mono text-slate-400">50–100</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1.5">
+                                            <input type="number" id="lines-min" value="50" min="5" max="1500"
+                                                oninput="syncBounds('lines', 'min')" onchange="syncBounds('lines', 'min')"
+                                                class="w-full px-2 py-1 text-xs font-mono rounded-lg bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-40 disabled:cursor-not-allowed" title="Minimum Lines">
+                                            <span class="text-xs text-slate-400">–</span>
+                                            <input type="number" id="lines-max" value="100" min="5" max="1500"
+                                                oninput="syncBounds('lines', 'max')" onchange="syncBounds('lines', 'max')"
+                                                class="w-full px-2 py-1 text-xs font-mono rounded-lg bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-40 disabled:cursor-not-allowed" title="Maximum Lines">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Toggles: Title, Comments/MSO, Prefer Favorites -->
+                                <div class="space-y-2 pt-1">
+                                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition">
+                                        <div class="flex items-center space-x-2.5">
+                                            <i class="fa-solid fa-heading text-blue-500 text-xs w-4 text-center"></i>
+                                            <span class="text-xs font-medium text-slate-800 dark:text-slate-200">Include &lt;title&gt; Tag</span>
+                                        </div>
+                                        <div class="relative inline-flex items-center">
+                                            <input type="checkbox" id="toggle-title" checked class="sr-only peer">
+                                            <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition">
+                                        <div class="flex items-center space-x-2.5">
+                                            <i class="fa-solid fa-code-commit text-amber-500 text-xs w-4 text-center"></i>
+                                            <span class="text-xs font-medium text-slate-800 dark:text-slate-200">Comments &amp; MSO Conditions</span>
+                                        </div>
+                                        <div class="relative inline-flex items-center">
+                                            <input type="checkbox" id="toggle-comments" checked class="sr-only peer">
+                                            <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition">
+                                        <div class="flex items-center space-x-2.5">
+                                            <i class="fa-solid fa-heart text-rose-500 text-xs w-4 text-center"></i>
+                                            <div>
+                                                <span class="text-xs font-medium text-slate-800 dark:text-slate-200 block">Prefer Favorites as Inspiration</span>
+                                                <span class="text-[10px] text-slate-400">3x NLP token weighting from Favorites DB</span>
+                                            </div>
+                                        </div>
+                                        <div class="relative inline-flex items-center">
+                                            <input type="checkbox" id="toggle-prefer-favorites" checked class="sr-only peer">
+                                            <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="triggerExternalGeneration()"
+                            class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm shadow-lg shadow-blue-600/25 transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-microchip"></i>
+                            <span>Generate Head</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Synthesized Output</span>
+                            <span id="gen-token-stats" class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Ready</span>
+                        </div>
+                        <span id="gen-output-name-badge" class="text-xs font-mono text-slate-500 dark:text-slate-400"></span>
+                    </div>
+                    <div id="generate-editor-mount"></div>
+                </div>
+            </section>
+
+            <!-- PAGE 2: FAVORITES -->
+            <section id="page-favorites" class="hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-heart text-rose-500 text-base"></i>
+                            <span>Saved Favorites</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Stored in Cookie Storage (<code class="font-mono text-xs px-1 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800">head_mixer_favs</code>). Click any card to inspect or browse with Previous/Next.
+                        </p>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="favorites-search-input" oninput="renderFavoritesList()" placeholder="Filter favorites..."
+                            class="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div id="favorites-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </section>
+
+            <!-- PAGE 3: ADD HEADS -->
+            <section id="page-add-heads" class="hidden space-y-8">
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-square-plus text-blue-500 text-base"></i>
+                                <span>Add New &lt;head&gt; to Library</span>
+                            </h2>
+                            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                Paste raw HTML <code class="font-mono text-xs">&lt;head&gt;</code> code and save it to <code class="font-mono text-xs">envelope-head-library</code>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-navy-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-end gap-3">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Head Name <span class="text-slate-400 font-normal">(optional — auto-generated if left blank)</span>
+                            </label>
+                            <input type="text" id="new-head-name" placeholder="e.g., Stripe Receipts + Amazon SES"
+                                class="w-full px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div class="w-full md:w-52">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">DOCTYPE</label>
+                            <select id="new-head-doctype"
+                                class="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+                                <option value="<!DOCTYPE html>">&lt;!DOCTYPE html&gt;</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="saveNewHeadToLibrary()"
+                            class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center space-x-2 shrink-0">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Add to Library</span>
+                        </button>
+                    </div>
+
+                    <div id="add-head-editor-mount"></div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <span>Library Heads</span>
+                                <span id="library-section-badge" class="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">0</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">All templates stored in IndexedDB <code class="font-mono">envelope-head-library</code>.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="relative flex-1 sm:w-64">
+                                <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-3 top-1/2 -translate-y-1/2"></i>
+                                <input type="text" id="library-search-input" oninput="renderLibraryGrid()" placeholder="Filter library heads..."
+                                    class="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500">
+                            </div>
+                            <button type="button" onclick="resetDefaultLibrary()" title="Restore Sample Heads"
+                                class="px-3 py-2 rounded-xl bg-slate-200/70 hover:bg-slate-300/70 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 transition">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="library-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- BACKDROP MODAL FOR FAVORITES & LIBRARY INSPECTION -->
+    <div id="preview-modal-backdrop" onclick="handleBackdropClick(event)"
+        class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-md transition-opacity duration-200">
+        <div id="preview-modal-dialog" onclick="event.stopPropagation()"
+            class="w-full max-w-6xl bg-white dark:bg-navy-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700/80 overflow-hidden flex flex-col max-h-[92vh]">
+            <div class="px-4 py-3 bg-slate-50 dark:bg-navy-850 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <span id="modal-source-pill" class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25 shrink-0">Favorite</span>
+                    <div class="min-w-0">
+                        <h3 id="modal-item-title" class="text-sm font-bold text-slate-900 dark:text-white truncate">Head Name</h3>
+                        <p id="modal-item-meta" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate">Timestamp</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-0.5">
+                        <button type="button" onclick="navigateModal(-1)" id="modal-prev-btn" class="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-chevron-left text-[10px]"></i><span>Previous</span>
+                        </button>
+                        <span id="modal-index-indicator" class="px-2.5 text-[11px] font-mono text-slate-500 dark:text-slate-400">1 / 1</span>
+                        <button type="button" onclick="navigateModal(1)" id="modal-next-btn" class="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition flex items-center space-x-1">
+                            <span>Next</span><i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                    <button type="button" onclick="closePreviewModal()" title="Close Modal (Esc)" class="p-2 rounded-xl bg-slate-200/70 hover:bg-slate-300/70 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="modal-editor-mount" class="flex-1 overflow-y-auto p-4"></div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 dark:bg-slate-800 text-white border border-slate-700 px-4 py-2.5 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-24 opacity-0 flex items-center space-x-2.5 z-[60] text-xs font-medium">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toast-message">Notification</span>
+    </div>
+
+    <!-- EXTERNAL CORE HEAD GENERATION ENGINE -->
+    <script src="{{ url_for('static', filename='mixer-script.js') }}"></script>
+
+    <!-- UI, DATABASE & EDITOR CONTROLLER SCRIPT -->
+    <script>
+        const LIBRARY_DB_NAME = 'envelope-head-library';
+        const LIBRARY_STORE_NAME = 'heads';
+        const FAVORITES_COOKIE_PREFIX = 'head_mixer_favs_';
+        const FAVORITES_MIRROR_KEY = 'head-mixer-favorites-mirror';
+
+        const DEFAULT_SEED_HEADS = [
+            {
+                id: "msg_9823471029",
+                name: "Stripe Receipts + Amazon SES",
+                html: "<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <meta name=\"x-apple-disable-message-reformatting\">\n  <title>Payment Receipt & Invoice Confirmation — Stripe Billing</title>\n  <link rel=\"preconnect\" href=\"https://fonts.stripe.com/inter.woff2\">\n  <link rel=\"stylesheet\" href=\"https://cdn.stripeassets.com/mail/v4/receipt.css\">\n  <!--[if mso]>\n  <xml>\n    <o:OfficeDocumentSettings>\n      <o:PixelsPerInch>96</o:PixelsPerInch>\n    </o:OfficeDocumentSettings>\n  </xml>\n  <![endif]-->\n  <style>\n    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f6f9fc; color: #32325d; margin: 0; padding: 0; }\n    .container { max-width: 600px; margin: 24px auto; background: #ffffff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 14px rgba(50,50,93,0.08); }\n    .amount-badge { color: #0a2540; background: #e3e8ee; font-size: 18px; font-weight: 700; padding: 6px 12px; border-radius: 6px; }\n    @media only screen and (max-width: 620px) {\n      .container { width: 100% !important; padding: 18px !important; }\n    }\n  </style>\n</head>",
+                doctype: "<!DOCTYPE html>",
+                liked: false,
+                createdAt: 1773514800000,
+                updatedAt: 1773514800000
+            },
+            {
+                id: "msg_9823471030",
+                name: "GitHub Enterprise Security Alert",
+                html: "<head>\n  <meta charset=\"utf-8\">\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <meta name=\"color-scheme\" content=\"light dark\">\n  <title>[GitHub] Security advisory & token verification notice</title>\n  <link rel=\"icon\" type=\"image/svg+xml\" href=\"https://github.githubassets.com/favicons/favicon.svg\">\n  <!-- Security Advisory Envelope Metadata -->\n  <!--[if gte mso 9]>\n  <style type=\"text/css\">\n    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }\n  </style>\n  <![endif]-->\n  <style>\n    body { font-family: 'Inter', -apple-system, sans-serif; color: #1f2328; background: #f6f8fa; line-height: 1.5; }\n    .btn { background: #1f883d; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 600; }\n    .alert-box { border: 1px solid #d0d7de; background: #ffffff; border-left: 4px solid #cf222e; padding: 16px; border-radius: 8px; }\n    @media (prefers-color-scheme: dark) {\n      body { background: #0d1117; color: #e6edf3; }\n    }\n  </style>\n  <script type=\"application/ld+json\">\n    {\"@context\":\"http://schema.org\",\"@type\":\"EmailMessage\",\"description\":\"Verify security token\"}\n  </" + "script>\n</head>",
+                doctype: "<!DOCTYPE html>",
+                liked: false,
+                createdAt: 1773518400000,
+                updatedAt: 1773518400000
+            },
+            {
+                id: "msg_9823471031",
+                name: "Linear Workspace Digest",
+                html: "<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <meta name=\"format-detection\" content=\"telephone=no, date=no, address=no\">\n  <title>Weekly Cycle Summary — Linear Product & Engineering Updates</title>\n  <link rel=\"preload\" as=\"image\" href=\"https://static.linear.app/email/hero-grid.png\">\n  <!-- Linear Digest Telemetry -->\n  <style>\n    body { font-family: system-ui, sans-serif; background: #0f1115; color: #e2e8f0; letter-spacing: -0.01em; }\n    .card { background: #161922; border: 1px solid #262b38; border-radius: 14px; padding: 28px; max-width: 560px; margin: 24px auto; }\n    .pill { background: #5e6ad2; color: #f8fafc; font-size: 12px; padding: 4px 10px; border-radius: 999px; }\n    @media only screen and (max-width: 600px) {\n      .card { border-radius: 8px; padding: 16px; }\n    }\n  </style>\n</head>",
+                doctype: "<!DOCTYPE html>",
+                liked: false,
+                createdAt: 1773522000000,
+                updatedAt: 1773522000000
+            }
+        ];
+
+        let libraryMemoryCache = [...DEFAULT_SEED_HEADS];
+
+        function openLibraryDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(LIBRARY_DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(LIBRARY_STORE_NAME)) {
+                        db.createObjectStore(LIBRARY_STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function getLibraryHeadsAsync() {
+            try {
+                const db = await openLibraryDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(LIBRARY_STORE_NAME, 'readonly');
+                    const store = tx.objectStore(LIBRARY_STORE_NAME);
+                    const req = store.getAll();
+                    req.onsuccess = () => {
+                        const results = req.result;
+                        if (!results || results.length === 0) {
+                            seedDefaultLibraryIntoDB().then(seeded => resolve(seeded));
+                        } else {
+                            libraryMemoryCache = results;
+                            resolve(results);
+                        }
+                    };
+                    req.onerror = () => resolve(libraryMemoryCache);
+                });
+            } catch (err) {
+                return libraryMemoryCache;
+            }
+        }
+
+        function getLibraryHeads() {
+            return libraryMemoryCache;
+        }
+
+        async function seedDefaultLibraryIntoDB() {
+            try {
+                const db = await openLibraryDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(LIBRARY_STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(LIBRARY_STORE_NAME);
+                    DEFAULT_SEED_HEADS.forEach(h => store.put(h));
+                    tx.oncomplete = () => {
+                        libraryMemoryCache = [...DEFAULT_SEED_HEADS];
+                        resolve(libraryMemoryCache);
+                    };
+                    tx.onerror = () => resolve(DEFAULT_SEED_HEADS);
+                });
+            } catch (e) {
+                return DEFAULT_SEED_HEADS;
+            }
+        }
+
+        async function saveLibraryHeadToDB(headObj) {
+            try {
+                const db = await openLibraryDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(LIBRARY_STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(LIBRARY_STORE_NAME);
+                    store.put(headObj);
+                    tx.oncomplete = () => {
+                        getLibraryHeadsAsync().then(() => {
+                            updateSidebarCounters();
+                            if (activePage === 'generate') renderGenerateHeadList();
+                            else if (activePage === 'add-heads') renderLibraryGrid();
+                            resolve(true);
+                        });
+                    };
+                    tx.onerror = (e) => reject(e.target.error);
+                });
+            } catch (e) {}
+        }
+
+        async function deleteLibraryHeadFromDB(id) {
+            try {
+                const db = await openLibraryDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(LIBRARY_STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(LIBRARY_STORE_NAME);
+                    store.delete(id);
+                    tx.oncomplete = () => {
+                        getLibraryHeadsAsync().then(() => {
+                            updateSidebarCounters();
+                            if (activePage === 'generate') renderGenerateHeadList();
+                            else if (activePage === 'add-heads') renderLibraryGrid();
+                            resolve(true);
+                        });
+                    };
+                    tx.onerror = (e) => reject(e.target.error);
+                });
+            } catch (e) {}
+        }
+
+        function updateSidebarCounters() {
+            const favCount = getFavorites().length;
+            const libCount = libraryMemoryCache.length;
+            document.getElementById('nav-favorites-count').textContent = favCount;
+            document.getElementById('nav-library-count').textContent = libCount;
+            const badge = document.getElementById('library-section-badge');
+            if (badge) badge.textContent = libCount;
+        }
+
+        const syncChannel = new BroadcastChannel('envelope-head-library-sync');
+        syncChannel.onmessage = async () => {
+            await getLibraryHeadsAsync();
+            updateSidebarCounters();
+            if (activePage === 'generate') renderGenerateHeadList();
+            else if (activePage === 'add-heads') renderLibraryGrid();
+        };
+
+        function generateRandomHeadName() {
+            const prefixes = ['Quantum', 'Neural', 'Synthetic', 'Stochastic', 'Pipeline', 'Flux', 'Matrix', 'Vector', 'Alpha', 'Echo'];
+            const suffixes = ['Envelope', 'Digest', 'Receipt', 'Telemetry', 'Profile', 'Security', 'Router', 'Workspace', 'Stream', 'Protocol'];
+            const num = Math.floor(Math.random() * 900) + 100;
+            return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${suffixes[Math.floor(Math.random() * suffixes.length)]} #${num}`;
+        }
+
+        // Min/Max Auto-Sync Controller
+        function syncBounds(group, changedSide) {
+            const minEl = document.getElementById(`${group}-min`);
+            const maxEl = document.getElementById(`${group}-max`);
+            const tagEl = document.getElementById(`${group === 'token' ? 'tokens' : 'lines'}-status-tag`);
+
+            let minVal = parseInt(minEl.value, 10);
+            let maxVal = parseInt(maxEl.value, 10);
+
+            if (isNaN(minVal) || isNaN(maxVal)) return;
+
+            if (changedSide === 'min' && minVal > maxVal) {
+                maxVal = minVal;
+                maxEl.value = maxVal;
+            } else if (changedSide === 'max' && maxVal < minVal) {
+                minVal = maxVal;
+                minEl.value = minVal;
+            }
+
+            if (!minEl.disabled && tagEl) {
+                tagEl.textContent = `${minVal}–${maxVal}`;
+            }
+        }
+
+        // Format Option Enable/Disable Controller
+        function updateFormatRadioUI() {
+            const val = document.querySelector('input[name="formatMode"]:checked')?.value || 'irregular';
+            ['irregular', 'proper', 'none'].forEach(m => {
+                const card = document.getElementById(`fmt-card-${m}`);
+                card.className = m === val
+                    ? 'flex items-start p-2.5 rounded-xl border cursor-pointer transition border-blue-500/60 bg-blue-500/5 dark:bg-blue-500/10'
+                    : 'flex items-start p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 cursor-pointer transition';
+            });
+
+            const tokensBox = document.getElementById('tokens-control-box');
+            const tMin = document.getElementById('token-min');
+            const tMax = document.getElementById('token-max');
+            const tTag = document.getElementById('tokens-status-tag');
+
+            const linesBox = document.getElementById('lines-control-box');
+            const lMin = document.getElementById('lines-min');
+            const lMax = document.getElementById('lines-max');
+            const lTag = document.getElementById('lines-status-tag');
+
+            const disableTokens = (val === 'proper');
+            const disableLines = (val === 'none');
+
+            tMin.disabled = disableTokens;
+            tMax.disabled = disableTokens;
+            tokensBox.classList.toggle('opacity-50', disableTokens);
+            tTag.textContent = disableTokens ? 'Disabled' : `${tMin.value}–${tMax.value}`;
+
+            lMin.disabled = disableLines;
+            lMax.disabled = disableLines;
+            linesBox.classList.toggle('opacity-50', disableLines);
+            lTag.textContent = disableLines ? 'Disabled' : `${lMin.value}–${lMax.value}`;
+        }
+
+        // Delegates generation to external mixer-script.js
+        function triggerExternalGeneration() {
+            if (window.HeadMixerEngine && typeof window.HeadMixerEngine.generateFromUI === 'function') {
+                window.HeadMixerEngine.generateFromUI();
+            } else {
+                showToast('mixer-script.js not loaded yet!', 'warn');
+            }
+        }
+
+        function writeCookieChunks(baseName, serializedStr, days = 365) {
+            const expires = new Date(Date.now() + days * 864e5).toUTCString();
+            const encoded = encodeURIComponent(serializedStr);
+            const chunkSize = 3400;
+            const totalChunks = Math.max(1, Math.ceil(encoded.length / chunkSize));
+            for (let i = 0; i < 30; i++) {
+                document.cookie = `${baseName}${i}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+            }
+            document.cookie = `${baseName}count=${totalChunks}; expires=${expires}; path=/; SameSite=Lax`;
+            for (let i = 0; i < totalChunks; i++) {
+                const chunk = encoded.slice(i * chunkSize, (i + 1) * chunkSize);
+                document.cookie = `${baseName}${i}=${chunk}; expires=${expires}; path=/; SameSite=Lax`;
+            }
+            try { localStorage.setItem(FAVORITES_MIRROR_KEY, serializedStr); } catch (e) {}
+        }
+
+        function readCookieChunks(baseName) {
+            const cookieMap = {};
+            document.cookie.split(';').forEach(pair => {
+                const idx = pair.indexOf('=');
+                if (idx > -1) cookieMap[pair.slice(0, idx).trim()] = pair.slice(idx + 1).trim();
+            });
+            const count = parseInt(cookieMap[`${baseName}count`], 10);
+            if (!isNaN(count) && count > 0) {
+                let assembled = '';
+                for (let i = 0; i < count; i++) {
+                    if (cookieMap[`${baseName}${i}`] !== undefined) assembled += cookieMap[`${baseName}${i}`];
+                }
+                if (assembled) {
+                    try { return decodeURIComponent(assembled); } catch (e) {}
+                }
+            }
+            try { return localStorage.getItem(FAVORITES_MIRROR_KEY); } catch (e) { return null; }
+        }
+
+        function getFavorites() {
+            try {
+                const raw = readCookieChunks(FAVORITES_COOKIE_PREFIX);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) { return []; }
+        }
+
+        function saveFavorites(favList) {
+            writeCookieChunks(FAVORITES_COOKIE_PREFIX, JSON.stringify(favList));
+            updateSidebarCounters();
+        }
+
+        const editorInstances = {};
+
+        function createPreviewEditorCard(instanceId, options = {}) {
+            const mount = document.getElementById(options.mountId);
+            if (!mount) return null;
+
+            const filename = options.filename || 'head.html';
+            const height = options.height || 420;
+            const extraBtns = options.extraButtonsHtml || '';
+
+            mount.innerHTML = `
+                <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+                    <div class="min-h-[3.5rem] py-2 bg-slate-50/90 dark:bg-navy-850 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 z-10">
+                        <div class="flex items-center space-x-1 bg-slate-200/70 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <button type="button" onclick="editorInstances['${instanceId}'].switchView('preview')" id="${instanceId}-tab-preview"
+                                class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-eye text-blue-500"></i><span>Preview</span>
+                            </button>
+                            <button type="button" onclick="editorInstances['${instanceId}'].switchView('code')" id="${instanceId}-tab-code"
+                                class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-code text-orange-500"></i><span>Code <span class="font-mono text-[10px] bg-slate-100 dark:bg-slate-900 px-1.5 py-0.2 rounded text-slate-600 dark:text-slate-300 ml-1">${escapeHTML(filename)}</span></span>
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                            ${extraBtns}
+                            <button type="button" onclick="editorInstances['${instanceId}'].copyCode()" class="px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 font-medium flex items-center space-x-1.5 transition">
+                                <i class="fa-solid fa-copy text-slate-500"></i><span>Copy</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white dark:bg-[#0d1320] overflow-hidden flex flex-col" style="height: ${height}px;">
+                        <div id="${instanceId}-view-preview" class="absolute inset-0 flex flex-col bg-slate-100 dark:bg-slate-950 overflow-hidden hidden">
+                            <div class="flex-1 flex items-start justify-start relative overflow-auto p-0">
+                                <iframe id="${instanceId}-iframe" class="device-desktop bg-white transition-all duration-300 border-0 block" sandbox="allow-scripts allow-modals allow-same-origin allow-forms"></iframe>
+                            </div>
+                        </div>
+                        <div id="${instanceId}-view-code" class="absolute inset-0 flex flex-col overflow-hidden">
+                            <div id="${instanceId}-cm-host" class="flex-1 min-h-0 relative overflow-hidden"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const cm = CodeMirror(document.getElementById(`${instanceId}-cm-host`), {
+                mode: 'htmlmixed',
+                lineNumbers: true,
+                styleActiveLine: true,
+                autoCloseTags: true,
+                autoCloseBrackets: true,
+                tabSize: 2,
+                indentUnit: 2,
+                lineWrapping: true,
+                viewportMargin: Infinity
+            });
+
+            const state = {
+                id: instanceId,
+                cm,
+                currentView: 'code',
+                setValue(val) { 
+                    const safeVal = val || '';
+                    cm.setValue(safeVal);
+                    setTimeout(() => {
+                        cm.refresh();
+                        cm.clearHistory();
+                        const iframe = document.getElementById(`${instanceId}-iframe`);
+                        if (iframe) iframe.srcdoc = safeVal;
+                    }, 100);
+                },
+                getValue() { return cm.getValue(); },
+                switchView(viewName) {
+                    this.currentView = viewName;
+                    ['preview', 'code'].forEach(v => {
+                        const viewEl = document.getElementById(`${instanceId}-view-${v}`);
+                        if (viewEl) viewEl.classList.toggle('hidden', v !== viewName);
+                        const tab = document.getElementById(`${instanceId}-tab-${v}`);
+                        if (tab) {
+                            tab.className = (v === viewName)
+                                ? 'px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm transition flex items-center space-x-1.5'
+                                : 'px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center space-x-1.5';
+                        }
+                    });
+                    if (viewName === 'code') cm.refresh();
+                    if (viewName === 'preview') {
+                        const iframe = document.getElementById(`${instanceId}-iframe`);
+                        if (iframe) iframe.srcdoc = cm.getValue();
+                    }
+                },
+                copyCode() {
+                    navigator.clipboard.writeText(cm.getValue());
+                    showToast('Copied HTML code');
+                }
+            };
+
+            if (options.initialValue) cm.setValue(options.initialValue);
+            state.switchView('code');
+            editorInstances[instanceId] = state;
+            window.editorInstances = editorInstances;
+            return state;
+        }
+
+        let activePage = 'generate';
+        let selectedHeadIds = new Set();
+        let lastGeneratedMeta = { name: '', doctype: '<!DOCTYPE html>' };
+
+        function toggleTheme() {
+            const htmlEl = document.documentElement;
+            const isDark = htmlEl.classList.contains('dark');
+            htmlEl.classList.toggle('dark', !isDark);
+            htmlEl.classList.toggle('light', isDark);
+            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-moon text-xs' : 'fa-solid fa-sun text-xs';
+            localStorage.setItem('head-mixer-theme', isDark ? 'light' : 'dark');
+            Object.values(editorInstances).forEach(inst => inst.cm.refresh());
+        }
+
+        function initTheme() {
+            const saved = localStorage.getItem('head-mixer-theme') || 'dark';
+            document.documentElement.classList.toggle('dark', saved === 'dark');
+            document.documentElement.classList.toggle('light', saved === 'light');
+            document.getElementById('theme-icon').className = saved === 'light' ? 'fa-solid fa-moon text-xs' : 'fa-solid fa-sun text-xs';
+        }
+
+        function navigatePage(page) {
+            activePage = page;
+            ['generate', 'favorites', 'add-heads'].forEach(p => {
+                const pageEl = document.getElementById(`page-${p}`);
+                if (pageEl) pageEl.classList.toggle('hidden', p !== page);
+                const btn = document.getElementById(`nav-${p}`);
+                if (btn) {
+                    btn.className = (p === page)
+                        ? 'nav-pill-active flex-1 lg:flex-none flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left whitespace-nowrap'
+                        : 'flex-1 lg:flex-none flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition text-left whitespace-nowrap';
+                }
+            });
+            if (page === 'generate') {
+                renderGenerateHeadList();
+                if (editorInstances['gen-editor']) editorInstances['gen-editor'].cm.refresh();
+            } else if (page === 'favorites') {
+                renderFavoritesList();
+            } else if (page === 'add-heads') {
+                renderLibraryGrid();
+                if (editorInstances['add-editor']) editorInstances['add-editor'].cm.refresh();
+            }
+        }
+
+        function renderGenerateHeadList() {
+            const all = getLibraryHeads();
+            const searchInput = document.getElementById('generate-search-input');
+            const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+            const filtered = all.filter(h => h.name.toLowerCase().includes(query) || h.html.toLowerCase().includes(query));
+
+            const container = document.getElementById('generate-head-list');
+            if (!container) return;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="py-10 text-center text-xs text-slate-500">No matching heads found.</div>`;
+            } else {
+                container.innerHTML = filtered.map(h => `
+                    <label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <input type="checkbox" ${selectedHeadIds.has(h.id) ? 'checked' : ''} onchange="toggleSingleHead('${h.id}', this.checked)"
+                                class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">${escapeHTML(h.name)}</div>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400">${h.id}</span>
+                    </label>
+                `).join('');
+            }
+            const countEl = document.getElementById('selected-head-count');
+            if (countEl) countEl.textContent = `Selected: ${selectedHeadIds.size} / ${all.length}`;
+            const selectAllEl = document.getElementById('select-all-heads');
+            if (selectAllEl) {
+                selectAllEl.checked = all.length > 0 && selectedHeadIds.size === all.length;
+            }
+        }
+
+        function toggleSingleHead(id, isChecked) {
+            if (isChecked) selectedHeadIds.add(id);
+            else selectedHeadIds.delete(id);
+            renderGenerateHeadList();
+        }
+
+        function toggleSelectAllHeads(isChecked) {
+            const all = getLibraryHeads();
+            if (isChecked) all.forEach(h => selectedHeadIds.add(h.id));
+            else selectedHeadIds.clear();
+            renderGenerateHeadList();
+        }
+
+        function saveCurrentGeneratedToFavorites() {
+            const ed = editorInstances['gen-editor'];
+            if (!ed) return;
+            const html = ed.getValue().trim();
+            if (!html) return;
+            const favs = getFavorites();
+            favs.unshift({ id: 'fav_' + Date.now(), timestamp: Date.now(), name: lastGeneratedMeta.name || generateRandomHeadName(), html });
+            saveFavorites(favs);
+            showToast('Saved to Favorites!');
+        }
+
+        function renderFavoritesList() {
+            const favs = getFavorites();
+            const searchInput = document.getElementById('favorites-search-input');
+            const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+            const filtered = favs.filter(f => f.name.toLowerCase().includes(q));
+            const grid = document.getElementById('favorites-grid');
+            if (!grid) return;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full bg-white dark:bg-navy-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center text-xs text-slate-400">No favorites saved.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map((item, idx) => `
+                <div onclick="openPreviewModal('favorites', ${idx})" class="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm hover:border-blue-500 transition cursor-pointer flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHTML(item.name)}</h4>
+                            <button type="button" onclick="event.stopPropagation(); deleteFavorite(${idx})" class="text-slate-400 hover:text-rose-500"><i class="fa-regular fa-trash-can text-xs"></i></button>
+                        </div>
+                        <pre class="mt-2 p-2 rounded bg-slate-50 dark:bg-slate-950 font-mono text-[11px] text-slate-500 overflow-hidden line-clamp-3">${escapeHTML(item.html)}</pre>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteFavorite(idx) {
+            const favs = getFavorites();
+            favs.splice(idx, 1);
+            saveFavorites(favs);
+            renderFavoritesList();
+            showToast('Deleted favorite');
+        }
+
+        async function saveNewHeadToLibrary() {
+            const ed = editorInstances['add-editor'];
+            if (!ed) return;
+            const html = ed.getValue().trim();
+            if (!html) return;
+            const nameInputEl = document.getElementById('new-head-name');
+            const nameInput = nameInputEl ? nameInputEl.value.trim() : '';
+            const name = nameInput || generateRandomHeadName();
+            const doctypeEl = document.getElementById('new-head-doctype');
+            const doctype = doctypeEl ? doctypeEl.value : '<!DOCTYPE html>';
+            const newHead = {
+                id: 'msg_' + Date.now(),
+                name,
+                html,
+                doctype,
+                createdAt: Date.now()
+            };
+            await saveLibraryHeadToDB(newHead);
+            if (nameInputEl) nameInputEl.value = '';
+            renderLibraryGrid();
+            renderGenerateHeadList();
+            syncChannel.postMessage({ type: 'HEADS_DB_UPDATED' });
+            showToast('Added head to library');
+        }
+
+        function renderLibraryGrid() {
+            const lib = getLibraryHeads();
+            const searchInput = document.getElementById('library-search-input');
+            const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+            const filtered = lib.filter(h => h.name.toLowerCase().includes(q));
+            const grid = document.getElementById('library-grid');
+            if (!grid) return;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full p-10 text-center text-xs text-slate-400">No library heads found.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map((item, idx) => `
+                <div onclick="openPreviewModal('library', ${idx})" class="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm hover:border-blue-500 transition cursor-pointer flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escapeHTML(item.name)}</h4>
+                            <button type="button" onclick="event.stopPropagation(); deleteLibraryHead('${item.id}')" class="text-slate-400 hover:text-rose-500"><i class="fa-regular fa-trash-can text-xs"></i></button>
+                        </div>
+                        <pre class="mt-2 p-2 rounded bg-slate-50 dark:bg-slate-950 font-mono text-[11px] text-slate-500 overflow-hidden line-clamp-3">${escapeHTML(item.html)}</pre>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteLibraryHead(id) {
+            await deleteLibraryHeadFromDB(id);
+            renderLibraryGrid();
+            renderGenerateHeadList();
+            syncChannel.postMessage({ type: 'HEADS_DB_UPDATED' });
+            showToast('Deleted head from library');
+        }
+
+        async function resetDefaultLibrary() {
+            await seedDefaultLibraryIntoDB();
+            renderLibraryGrid();
+            renderGenerateHeadList();
+            syncChannel.postMessage({ type: 'HEADS_DB_UPDATED' });
+            showToast('Restored default library heads');
+        }
+
+        let modalCtx = { source: 'favorites', index: 0 };
+        function openPreviewModal(source, index) {
+            modalCtx = { source, index };
+            const backdrop = document.getElementById('preview-modal-backdrop');
+            if (backdrop) {
+                backdrop.classList.remove('hidden');
+                backdrop.classList.add('flex');
+            }
+            renderModalItem();
+        }
+
+        function renderModalItem() {
+            const items = modalCtx.source === 'favorites' ? getFavorites() : getLibraryHeads();
+            if (items.length === 0) { closePreviewModal(); return; }
+            if (modalCtx.index >= items.length) modalCtx.index = items.length - 1;
+            const item = items[modalCtx.index];
+
+            const titleEl = document.getElementById('modal-item-title');
+            const metaEl = document.getElementById('modal-item-meta');
+            const indicatorEl = document.getElementById('modal-index-indicator');
+
+            if (titleEl) titleEl.textContent = item.name;
+            if (metaEl) metaEl.textContent = item.id;
+            if (indicatorEl) indicatorEl.textContent = `${modalCtx.index + 1} / ${items.length}`;
+
+            createPreviewEditorCard('modal-editor', {
+                mountId: 'modal-editor-mount',
+                filename: `${item.id}.html`,
+                height: 440,
+                initialValue: item.html,
+                extraButtonsHtml: `<button type="button" onclick="saveModalChanges()" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg font-semibold text-xs">Save Changes</button>`
+            });
+        }
+
+        function navigateModal(delta) {
+            const items = modalCtx.source === 'favorites' ? getFavorites() : getLibraryHeads();
+            const next = modalCtx.index + delta;
+            if (next >= 0 && next < items.length) {
+                modalCtx.index = next;
+                renderModalItem();
+            }
+        }
+
+        async function saveModalChanges() {
+            const ed = editorInstances['modal-editor'];
+            if (!ed) return;
+            const html = ed.getValue();
+            if (modalCtx.source === 'favorites') {
+                const favs = getFavorites();
+                favs[modalCtx.index].html = html;
+                saveFavorites(favs);
+                renderFavoritesList();
+            } else {
+                const lib = getLibraryHeads();
+                lib[modalCtx.index].html = html;
+                await saveLibraryHeadToDB(lib[modalCtx.index]);
+                renderLibraryGrid();
+                syncChannel.postMessage({ type: 'HEADS_DB_UPDATED' });
+            }
+            showToast('Saved changes successfully');
+        }
+
+        function handleBackdropClick(e) {
+            const backdrop = document.getElementById('preview-modal-backdrop');
+            if (e.target === backdrop) closePreviewModal();
+        }
+
+        function closePreviewModal() {
+            const backdrop = document.getElementById('preview-modal-backdrop');
+            if (backdrop) {
+                backdrop.classList.add('hidden');
+                backdrop.classList.remove('flex');
+            }
+        }
+
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
+        }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            const msgEl = document.getElementById('toast-message');
+            if (msgEl) msgEl.textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                t.classList.remove('translate-y-0', 'opacity-100');
+                t.classList.add('translate-y-24', 'opacity-0');
+            }, 2500);
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            updateFormatRadioUI();
+
+            const libraryHeads = await getLibraryHeadsAsync();
+            libraryHeads.forEach(h => selectedHeadIds.add(h.id));
+
+            updateSidebarCounters();
+            renderGenerateHeadList();
+
+            createPreviewEditorCard('gen-editor', {
+                mountId: 'generate-editor-mount',
+                filename: 'synthesized-head.html',
+                height: 420,
+                extraButtonsHtml: `
+                    <button type="button" onclick="triggerExternalGeneration()" class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-arrows-rotate"></i><span>Generate Another</span>
+                    </button>
+                    <button type="button" onclick="saveCurrentGeneratedToFavorites()" class="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-lg font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-heart"></i><span>Add to Favorites</span>
+                    </button>
+                `
+            });
+
+            createPreviewEditorCard('add-editor', {
+                mountId: 'add-head-editor-mount',
+                filename: 'new-head.html',
+                height: 340,
+                initialValue: '<head>\n  <meta charset="utf-8">\n  <title>Custom Head</title>\n</head>'
+            });
+
+            if (libraryHeads.length > 0) {
+                setTimeout(() => {
+                    triggerExternalGeneration();
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

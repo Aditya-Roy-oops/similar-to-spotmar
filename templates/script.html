@@ -35,6 +35,20 @@
         }
         .CodeMirror-activeline-background { background: rgba(99, 102, 241, 0.15) !important; }
         .cm-search-highlight { background-color: #fef08a !important; border: 1px solid #eab308; border-radius: 2px; }
+
+
+        .cm-search-match-other {
+            background-color: rgba(236, 72, 153, 0.35) !important;
+            border-bottom: 2px solid rgba(236, 72, 153, 0.9) !important;
+            border-radius: 2px;
+        }
+
+        /* Currently active match: Green */
+        .cm-search-match-active {
+            background-color: rgba(34, 197, 94, 0.6) !important;
+            border-bottom: 3px solid #16a34a !important;
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen font-sans flex flex-col justify-between transition-colors duration-200">
@@ -63,9 +77,9 @@
                     </div>
 
                     <div class="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm text-xs">
-                        <input type="date" id="dateFrom" onchange="startFreshSync()" title="From Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
+                        <input type="date" id="dateFrom" title="From Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
                         <span class="text-slate-400 font-bold">-</span>
-                        <input type="date" id="dateTo" onchange="startFreshSync()" title="To Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
+                        <input type="date" id="dateTo" title="To Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
                     </div>
 
 
@@ -187,16 +201,6 @@
                         </button>
                     </div>
 
-                    <button onclick="copyHeadContent()" class="px-2.5 py-1 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 border border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
-                        <i class="fa-solid fa-copy text-blue-600 dark:text-blue-400"></i>
-                        <span>Copy &lt;head&gt;</span>
-                    </button>
-
-                    <button onclick="findHeadTag()" class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
-                        <i class="fa-solid fa-magnifying-glass text-amber-600 dark:text-amber-400"></i>
-                        <span>Find &lt;/head&gt;</span>
-                    </button>
-
                     <button onclick="toggleStarActiveEmail()" id="inspectorStarBtn" class="px-2.5 py-1 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
                         <i id="inspectorStarIcon" class="fa-regular fa-star text-amber-600 dark:text-amber-400"></i>
                         <span id="inspectorStarText">Star Head</span>
@@ -207,10 +211,27 @@
                         <span>Find & Replace</span>
                     </button>
 
+                    <button onclick="findHeadTag()" class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
+                        <i class="fa-solid fa-magnifying-glass text-amber-600 dark:text-amber-400"></i>
+                        <span>Find &lt;/head&gt;</span>
+                    </button>
+
                     <button onclick="disableEmailLinks()" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
                         <i class="fa-solid fa-link-slash text-rose-600 dark:text-rose-400"></i>
                         <span>Strip Link Dots</span>
                     </button>
+
+                    <button onclick="clearTitleContent()" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
+                        <i class="fa-solid fa-heading text-rose-600 dark:text-rose-400"></i>
+                        <span>Clear Title Content</span>
+                    </button>
+
+                    <button onclick="copyHeadContent()" class="px-3 py-1.5 bg-green-50 dark:bg-green-950 hover:bg-green-100 dark:hover:bg-green-900 border border-green-300 dark:border-green-800 text-white-800 dark:text-white-300 text-xs font-bold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
+                        <i class="fa-solid fa-copy text-green-600 dark:text-green-400"></i>
+                        <span>Copy &lt;head&gt;</span>
+                    </button>
+
+                    
                 </div>
                 
                 <button onclick="closeInspector()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-base transition ml-2"><i class="fa-solid fa-xmark"></i></button>
@@ -445,12 +466,18 @@
         let countdownSeconds = 300;
         let activeSourceFilters = new Set();
         const CHUNK_SIZE = 7;
-        const defaultCreds = "";
+        const defaultCreds = "imappassword1, InboxMailSpotid1@yahoo.com\nimappassword2, InboxMailSpotid2@yahoo.com\nimappassword3, InboxMailSpotid3@yahoo.com";
 
         window.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateFrom').value = today;
-            document.getElementById('dateTo').value = today;
+            // Get local date directly without UTC conversion shift
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const localToday = `${year}-${month}-${day}`;
+
+            document.getElementById('dateFrom').value = localToday;
+            document.getElementById('dateTo').value = localToday;
 
             if (!localStorage.getItem('yahoo_creds')) {
                 localStorage.setItem('yahoo_creds', defaultCreds);
@@ -507,12 +534,19 @@
             });
         }
 
+        let timerIntervalId = null;
+
         function initTenMinuteScheduler() {
-            setInterval(() => {
+            if (timerIntervalId) clearInterval(timerIntervalId);
+            timerIntervalId = setInterval(() => {
+                // Pause countdown while a sync is actively running
+                if (isSyncRunning) return;
+
                 countdownSeconds--;
                 if (countdownSeconds <= 0) {
                     countdownSeconds = 300;
-                    startContinuousSync();
+                    // Incremental check: fetches only new mails in chunks of 7 max, then stops
+                    startContinuousSync(true); 
                 }
                 updateCountdownDisplay();
             }, 1000);
@@ -522,34 +556,62 @@
             const mins = Math.floor(countdownSeconds / 60);
             const secs = countdownSeconds % 60;
             const formatted = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-            document.getElementById('timerCountdown').textContent = `Auto-syncing in ${formatted}`;
+            const el = document.getElementById('timerCountdown');
+            if (el) {
+                el.textContent = isSyncRunning ? 'Syncing...' : `Auto-syncing in ${formatted}`;
+            }
         }
+
+        let syncAbortId = 0;
 
         function startFreshSync() {
+            syncAbortId++;
+            isSyncRunning = false;
+            countdownSeconds = 300;
+            updateCountdownDisplay();
+
             fetchedEmails = [];
+            activeIndex = null;
             renderFilteredGrids();
-            startContinuousSync();
+            startContinuousSync(false);
         }
 
-        async function startContinuousSync() {
+        async function startContinuousSync(isIncremental = false) {
             if (isSyncRunning) return;
             const accounts = parseStoredCredentials();
             if (accounts.length === 0) return;
 
+            const currentRunId = ++syncAbortId;
             isSyncRunning = true;
-            const dateFromVal = document.getElementById('dateFrom').value;
-            const dateToVal = document.getElementById('dateTo').value;
+            updateCountdownDisplay();
+
+            const now = new Date();
+            const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            
+            const dateFromVal = document.getElementById('dateFrom').value || localToday;
+            const dateToVal = document.getElementById('dateTo').value || dateFromVal;
+            const tzOffset = new Date().getTimezoneOffset();
+
             const spinner = document.getElementById('refreshSpinner');
             const syncBadge = document.getElementById('syncStatusBadge');
 
             spinner.classList.add('fa-spin');
+            syncBadge.textContent = isIncremental ? 'Checking for new mails...' : 'Fetching chunk (7)...';
             syncBadge.classList.remove('hidden');
+
+            // Track currently selected email ID so open inspector stays locked on the same email
+            const currentlyOpenMailId = (activeIndex !== null && displayedFilteredEmails[activeIndex])
+                ? displayedFilteredEmails[activeIndex].id
+                : null;
 
             let offset = 0;
             let hasMore = true;
+            let totalNewInCycle = 0;
 
             try {
-                while (hasMore) {
+                while (hasMore && currentRunId === syncAbortId) {
+                    const knownIds = fetchedEmails.map(e => e.id);
+
                     const res = await fetch('/api/fetch-chunk', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -557,41 +619,84 @@
                             accounts, 
                             date: dateFromVal, 
                             date_to: dateToVal,
+                            tz_offset: tzOffset,
                             offset: offset, 
-                            limit: CHUNK_SIZE 
+                            limit: CHUNK_SIZE,
+                            known_ids: knownIds,
+                            is_incremental: isIncremental
                         })
                     });
 
+                    if (currentRunId !== syncAbortId) break;
+
                     const data = await res.json();
-                    if (data.status === 'success' && data.emails.length > 0) {
-                        data.emails.forEach(newEmail => {
-                            if (!fetchedEmails.some(e => e.id === newEmail.id)) {
-                                fetchedEmails.push(newEmail);
-                                if (!localStorage.getItem('InboxMailSpot_saved_filters')) {
-                                    activeSourceFilters.add(newEmail.source);
+                    if (data.status === 'success') {
+                        const batchNewEmails = [];
+
+                        if (data.emails && data.emails.length > 0) {
+                            data.emails.forEach(newEmail => {
+                                if (!fetchedEmails.some(e => e.id === newEmail.id)) {
+                                    batchNewEmails.push(newEmail);
+                                    if (!localStorage.getItem('InboxMailSpot_saved_filters')) {
+                                        activeSourceFilters.add(newEmail.source);
+                                    }
                                 }
-                            }
-                        });
-
-                        updateSourceFilterUI();
-                        renderFilteredGrids();
-
-                        offset += CHUNK_SIZE;
-                        if (data.emails.length < CHUNK_SIZE) {
-                            hasMore = false;
+                            });
                         }
-                        await new Promise(r => setTimeout(r, 300));
+
+                        if (batchNewEmails.length > 0) {
+                            totalNewInCycle += batchNewEmails.length;
+
+                            if (isIncremental) {
+                                // Prepend newly arrived emails to the top in real time
+                                fetchedEmails = [...batchNewEmails, ...fetchedEmails];
+                            } else {
+                                // Append historical chunks in order during initial load
+                                fetchedEmails.push(...batchNewEmails);
+                            }
+
+                            // Keep emails sorted newest -> oldest by timestamp
+                            fetchedEmails.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                            updateSourceFilterUI();
+                            renderFilteredGrids();
+
+                            // Restore activeIndex if inspector is open
+                            if (currentlyOpenMailId) {
+                                const newIdx = displayedFilteredEmails.findIndex(e => e.id === currentlyOpenMailId);
+                                if (newIdx !== -1) activeIndex = newIdx;
+                            }
+                        }
+
+                        hasMore = Boolean(data.has_more);
+
+                        if (hasMore) {
+                            offset += CHUNK_SIZE;
+                            await new Promise(r => setTimeout(r, 250));
+                        } else {
+                            // All caught up: stop requesting immediately
+                            break;
+                        }
                     } else {
                         hasMore = false;
+                        break;
                     }
+                }
+
+                if (isIncremental && totalNewInCycle > 0) {
+                    showToast(`${totalNewInCycle} new email${totalNewInCycle > 1 ? 's' : ''} received!`);
                 }
             } catch (err) {
                 console.error("Continuous Sync Engine Error:", err);
             } finally {
-                isSyncRunning = false;
-                countdownSeconds = 300;
-                spinner.classList.remove('fa-spin');
-                syncBadge.classList.add('hidden');
+                if (currentRunId === syncAbortId) {
+                    isSyncRunning = false;
+                    countdownSeconds = 300;
+                    spinner.classList.remove('fa-spin');
+                    syncBadge.classList.add('hidden');
+                    updateCountdownDisplay();
+                    renderFilteredGrids();
+                }
             }
         }
 
@@ -723,7 +828,22 @@
             document.getElementById('modalFromName').textContent = email.from_name;
             document.getElementById('modalFromEmail').textContent = email.from_email;
             document.getElementById('modalSubject').textContent = email.subject;
-            document.getElementById('modalMetaBrief').textContent = `${email.account.split('@')[0]} &bull; ${email.date.substring(0, 16)}`;
+            
+            // Safely parse and format date string for Account / Date metadata header
+            let formattedDate = email.date || '';
+            try {
+                if (formattedDate) {
+                    const parsedDate = new Date(email.date);
+                    if (!isNaN(parsedDate)) {
+                        formattedDate = parsedDate.toLocaleString();
+                    }
+                }
+            } catch (e) {
+                formattedDate = email.date;
+            }
+
+            const shortAccount = email.account ? email.account.split('@')[0] : 'Account';
+            document.getElementById('modalMetaBrief').innerHTML = `${shortAccount} &bull; ${escapeHTML(formattedDate)}`;
             document.getElementById('modalSourceBadge').textContent = email.source;
 
             // Original & Dynamic Decoded Return-Path
@@ -818,12 +938,24 @@
 
         function disableEmailLinks() {
             let code = cmEditor.getValue();
-            const tldRegex = /\.(com|net|co|ai|io|app|shop|store|org|me|design|blog|info|in|biz|us|uk|xyz|dev|site|tech|edu|gov|png|jpg|jpeg|gif|svg|css|js)\b/gi;
+            const tldRegex = /\.(com|net|co|ai|io|app|shop|store|org|me|design|blog|info|in|biz|us|uk|xyz|dev|site|tech|edu|gov|png|jpg|jpeg|gif|svg|css|js|nz|nl)\b/gi;
             code = code.replace(tldRegex, '$1');
 
             cmEditor.setValue(code);
             updateIframe(code);
             showToast('Removed all dots (.) from links and extensions!');
+        }
+
+        function clearTitleContent() {
+            let code = cmEditor.getValue();
+    
+            // Matches <title>...</title> case-insensitively and replaces the inner content with an empty string
+            const titleRegex = /<title\b[^>]*>([\s\S]*?)<\/title>/gi;
+            code = code.replace(titleRegex, '<title></title>');
+
+            cmEditor.setValue(code);
+            updateIframe(code);
+            showToast('Cleared content inside title tags!');
         }
 
         function showToast(message) {
@@ -920,83 +1052,134 @@
             }
         }
 
-        function executeFind() {
-            const query = document.getElementById('findInput').value;
-            const countEl = document.getElementById('findMatchCount');
-            if (!query) {
-                countEl.textContent = '0 matches';
-                return;
-            }
 
-            let count = 0;
-            const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
-            while (cursor.findNext()) {
-                count++;
-            }
+        // Externally modified functioning "find Replace"
 
-            countEl.textContent = `${count} matches`;
-            if (count > 0) {
-                findNextMatch();
-            }
-        }
+        // Start\\>\\>
 
-        function findNextMatch() {
-            const query = document.getElementById('findInput').value;
-            if (!query) return;
+        let searchMarkers = [];
 
-            const cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
-            if (cursor.findNext()) {
-                cmEditor.setSelection(cursor.from(), cursor.to());
-                cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
-            } else {
-                const wrapCursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
-                if (wrapCursor.findNext()) {
-                    cmEditor.setSelection(wrapCursor.from(), wrapCursor.to());
-                    cmEditor.scrollIntoView({ from: wrapCursor.from(), to: wrapCursor.to() }, 100);
-                }
-            }
-        }
+// Clear existing highlight markers from the editor
+function clearSearchMarks() {
+    searchMarkers.forEach(marker => marker.clear());
+    searchMarkers = [];
+}
 
-        function findPreviousMatch() {
-            const query = document.getElementById('findInput').value;
-            if (!query) return;
+// Mark all matches in the document (active one gets green, others get pink/purple)
+function markAllMatches(query, activeFrom = null, activeTo = null) {
+    clearSearchMarks();
+    if (!query) return;
 
-            const cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
-            if (cursor.findPrevious()) {
-                cmEditor.setSelection(cursor.from(), cursor.to());
-                cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
-            }
-        }
+    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+    while (cursor.findNext()) {
+        const from = cursor.from();
+        const to = cursor.to();
 
-        function replaceCurrentMatch() {
-            const query = document.getElementById('findInput').value;
-            const replaceVal = document.getElementById('replaceInput').value || '';
-            if (!query) return;
+        // Check if this specific match is the currently active one
+        const isActive = activeFrom && activeTo && 
+            from.line === activeFrom.line && from.ch === activeFrom.ch &&
+            to.line === activeFrom.line && to.ch === activeFrom.ch;
 
-            const sel = cmEditor.getSelection();
-            if (sel.toLowerCase() === query.toLowerCase()) {
-                cmEditor.replaceSelection(replaceVal);
-                findNextMatch();
-                executeFind();
-            } else {
-                findNextMatch();
-            }
-        }
+        const className = isActive ? 'cm-search-match-active' : 'cm-search-match-other';
+        const marker = cmEditor.markText(from, to, { className: className });
+        searchMarkers.push(marker);
+    }
+}
 
-        function replaceAllMatches() {
-            const query = document.getElementById('findInput').value;
-            const replaceVal = document.getElementById('replaceInput').value || '';
-            if (!query) return;
+function executeFind() {
+    const query = document.getElementById('findInput').value;
+    const countEl = document.getElementById('findMatchCount');
+    clearSearchMarks();
 
-            let count = 0;
-            const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
-            while (cursor.findNext()) {
-                cursor.replace(replaceVal);
-                count++;
-            }
-            showToast(`Replaced ${count} occurrences!`);
-            executeFind();
-        }
+    if (!query) {
+        countEl.textContent = '0 matches';
+        return;
+    }
+
+    let count = 0;
+    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+    while (cursor.findNext()) {
+        count++;
+    }
+
+    countEl.textContent = `${count} matches`;
+    if (count > 0) {
+        findNextMatch();
+    }
+}
+
+function findNextMatch() {
+    const query = document.getElementById('findInput').value;
+    if (!query) return;
+
+    let cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
+    
+    if (!cursor.findNext()) {
+        // Wrap around to the beginning if nothing found forward
+        cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+        if (!cursor.findNext()) return;
+    }
+
+    cmEditor.setSelection(cursor.from(), cursor.to());
+    cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
+    
+    // Re-mark all matches and highlight the current one in green
+    markAllMatches(query, cursor.from(), cursor.to());
+}
+
+function findPreviousMatch() {
+    const query = document.getElementById('findInput').value;
+    if (!query) return;
+
+    let cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
+    
+    if (!cursor.findPrevious()) {
+        // Wrap around to the end if nothing found backward
+        const lastLine = cmEditor.lastLine();
+        const lastCh = cmEditor.getLine(lastLine).length;
+        cursor = cmEditor.getSearchCursor(query, { line: lastLine, ch: lastCh }, { caseFold: true });
+        if (!cursor.findPrevious()) return;
+    }
+
+    cmEditor.setSelection(cursor.from(), cursor.to());
+    cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
+    
+    // Re-mark all matches and highlight the current one in green
+    markAllMatches(query, cursor.from(), cursor.to());
+}
+
+function replaceCurrentMatch() {
+    const query = document.getElementById('findInput').value;
+    const replaceVal = document.getElementById('replaceInput').value || '';
+    if (!query) return;
+
+    const sel = cmEditor.getSelection();
+    if (sel.toLowerCase() === query.toLowerCase()) {
+        cmEditor.replaceSelection(replaceVal);
+        executeFind();
+    } else {
+        findNextMatch();
+    }
+}
+
+function replaceAllMatches() {
+    const query = document.getElementById('findInput').value;
+    const replaceVal = document.getElementById('replaceInput').value || '';
+    if (!query) return;
+
+    let count = 0;
+    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+    while (cursor.findNext()) {
+        cursor.replace(replaceVal);
+        count++;
+    }
+    showToast(`Replaced ${count} occurrences!`);
+    executeFind();
+}
+
+
+        // End//>//>
+        
 
         function findHeadTag() {
             switchTab('editor');

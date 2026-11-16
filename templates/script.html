@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AllMailSpot - Live Mailboard</title>
+    <title>InboxMailSpot - Live Mailboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -63,7 +63,7 @@
                     </div>
                     <div>
                         <h1 class="font-black text-base text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
-                            AllMailSpot <span class="text-[9px] bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 px-1 py-0.5 rounded font-bold uppercase">Pro</span>
+                            InboxMailSpot <span class="text-[9px] bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 px-1 py-0.5 rounded font-bold uppercase">Pro</span>
                         </h1>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400">Live Multi-ID Streamer & Inspector</p>
                     </div>
@@ -159,7 +159,7 @@
 
     <!-- FOOTER -->
     <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-6 text-center text-xs text-slate-500 dark:text-slate-400 mt-8 transition-colors duration-200">
-        <p>&copy; 2026 AllMailSpot. All rights reserved. &bull; Designed By <strong class="text-green-600 dark:text-green-400 font-bold">"Adimon"</strong></p>
+        <p>&copy; 2026 InboxMailSpot. All rights reserved. &bull; Designed By <strong class="text-green-600 dark:text-green-400 font-bold">"Adimon"</strong></p>
     </footer>
 
     <!-- FULLSCREEN SPLIT INSPECTOR OVERLAY -->
@@ -368,7 +368,7 @@
                 </h3>
                 <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Enter your credentials in format: <code class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-600 dark:text-green-400 font-mono">imappassword, allMailSpotid</code> (One per line).</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Enter your credentials in format: <code class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-600 dark:text-green-400 font-mono">apppassword, yahooid</code> (One per line).</p>
             
             <textarea id="credentialsInput" rows="6" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-green-600 dark:focus:border-green-500 focus:bg-white dark:focus:bg-slate-900 transition" placeholder="imappassword1, spotid1@yahoo.com&#10;imappassword2, spotid2@yahoo.com&#10;imappassword3, spotid3@yahoo.com"></textarea>
 
@@ -466,7 +466,7 @@
         let countdownSeconds = 300;
         let activeSourceFilters = new Set();
         const CHUNK_SIZE = 7;
-        const defaultCreds = "imappassword1, allMailSpotid1@yahoo.com\nimappassword2, allMailSpotid2@yahoo.com\nimappassword3, allMailSpotid3@yahoo.com";
+        const defaultCreds = "";
 
         window.addEventListener('DOMContentLoaded', () => {
             // Get local date directly without UTC conversion shift

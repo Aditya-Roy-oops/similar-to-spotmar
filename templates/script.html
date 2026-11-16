@@ -35,20 +35,6 @@
         }
         .CodeMirror-activeline-background { background: rgba(99, 102, 241, 0.15) !important; }
         .cm-search-highlight { background-color: #fef08a !important; border: 1px solid #eab308; border-radius: 2px; }
-
-
-        .cm-search-match-other {
-            background-color: rgba(236, 72, 153, 0.35) !important;
-            border-bottom: 2px solid rgba(236, 72, 153, 0.9) !important;
-            border-radius: 2px;
-        }
-
-        /* Currently active match: Green */
-        .cm-search-match-active {
-            background-color: rgba(34, 197, 94, 0.6) !important;
-            border-bottom: 3px solid #16a34a !important;
-            border-radius: 2px;
-        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen font-sans flex flex-col justify-between transition-colors duration-200">
@@ -77,9 +63,9 @@
                     </div>
 
                     <div class="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm text-xs">
-                        <input type="date" id="dateFrom" title="From Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
+                        <input type="date" id="dateFrom" onchange="startFreshSync()" title="From Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
                         <span class="text-slate-400 font-bold">-</span>
-                        <input type="date" id="dateTo" title="To Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
+                        <input type="date" id="dateTo" onchange="startFreshSync()" title="To Date" class="bg-transparent text-slate-700 dark:text-slate-200 font-medium outline-none cursor-pointer text-[11px]">
                     </div>
 
 
@@ -201,6 +187,16 @@
                         </button>
                     </div>
 
+                    <button onclick="copyHeadContent()" class="px-2.5 py-1 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 border border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
+                        <i class="fa-solid fa-copy text-blue-600 dark:text-blue-400"></i>
+                        <span>Copy &lt;head&gt;</span>
+                    </button>
+
+                    <button onclick="findHeadTag()" class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
+                        <i class="fa-solid fa-magnifying-glass text-amber-600 dark:text-amber-400"></i>
+                        <span>Find &lt;/head&gt;</span>
+                    </button>
+
                     <button onclick="toggleStarActiveEmail()" id="inspectorStarBtn" class="px-2.5 py-1 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
                         <i id="inspectorStarIcon" class="fa-regular fa-star text-amber-600 dark:text-amber-400"></i>
                         <span id="inspectorStarText">Star Head</span>
@@ -211,27 +207,10 @@
                         <span>Find & Replace</span>
                     </button>
 
-                    <button onclick="findHeadTag()" class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
-                        <i class="fa-solid fa-magnifying-glass text-amber-600 dark:text-amber-400"></i>
-                        <span>Find &lt;/head&gt;</span>
-                    </button>
-
                     <button onclick="disableEmailLinks()" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
                         <i class="fa-solid fa-link-slash text-rose-600 dark:text-rose-400"></i>
                         <span>Strip Link Dots</span>
                     </button>
-
-                    <button onclick="clearTitleContent()" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-[11px] font-semibold rounded-lg flex items-center space-x-1 transition shadow-xs">
-                        <i class="fa-solid fa-heading text-rose-600 dark:text-rose-400"></i>
-                        <span>Clear Title Content</span>
-                    </button>
-
-                    <button onclick="copyHeadContent()" class="px-3 py-1.5 bg-green-50 dark:bg-green-950 hover:bg-green-100 dark:hover:bg-green-900 border border-green-300 dark:border-green-800 text-white-800 dark:text-white-300 text-xs font-bold rounded-lg flex items-center space-x-1.5 transition shadow-xs">
-                        <i class="fa-solid fa-copy text-green-600 dark:text-green-400"></i>
-                        <span>Copy &lt;head&gt;</span>
-                    </button>
-
-                    
                 </div>
                 
                 <button onclick="closeInspector()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-base transition ml-2"><i class="fa-solid fa-xmark"></i></button>
@@ -368,7 +347,7 @@
                 </h3>
                 <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Enter your credentials in format: <code class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-600 dark:text-green-400 font-mono">apppassword, yahooid</code> (One per line).</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Enter your credentials in format: <code class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-600 dark:text-green-400 font-mono">imappassword, InboxMailSpotid</code> (One per line).</p>
             
             <textarea id="credentialsInput" rows="6" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 outline-none focus:border-green-600 dark:focus:border-green-500 focus:bg-white dark:focus:bg-slate-900 transition" placeholder="imappassword1, spotid1@yahoo.com&#10;imappassword2, spotid2@yahoo.com&#10;imappassword3, spotid3@yahoo.com"></textarea>
 
@@ -469,15 +448,9 @@
         const defaultCreds = "";
 
         window.addEventListener('DOMContentLoaded', () => {
-            // Get local date directly without UTC conversion shift
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const localToday = `${year}-${month}-${day}`;
-
-            document.getElementById('dateFrom').value = localToday;
-            document.getElementById('dateTo').value = localToday;
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateFrom').value = today;
+            document.getElementById('dateTo').value = today;
 
             if (!localStorage.getItem('yahoo_creds')) {
                 localStorage.setItem('yahoo_creds', defaultCreds);
@@ -495,7 +468,7 @@
         });
 
         function initTheme() {
-            const savedTheme = localStorage.getItem('allmailspot_theme') || 'light';
+            const savedTheme = localStorage.getItem('InboxMailSpot_theme') || 'light';
             if (savedTheme === 'dark') {
                 document.documentElement.classList.add('dark');
                 document.getElementById('themeIcon').className = "fa-solid fa-sun";
@@ -507,7 +480,7 @@
 
         function toggleTheme() {
             const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('allmailspot_theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('InboxMailSpot_theme', isDark ? 'dark' : 'light');
             document.getElementById('themeIcon').className = isDark ? "fa-solid fa-sun" : "fa-solid fa-moon";
             
             if (cmEditor) {
@@ -552,35 +525,9 @@
             document.getElementById('timerCountdown').textContent = `Auto-syncing in ${formatted}`;
         }
 
-        let syncSessionMemory = {
-            dateFrom: '',
-            dateTo: '',
-            leftOff: 0,
-            bottomLeftOff: 0
-        };
-
-        
-
         function startFreshSync() {
-            // Read date values as raw literal strings to prevent local timezone offset shifts
-            const rawFrom = document.getElementById('dateFrom').value; // e.g. "2026-11-12"
-            const rawTo = document.getElementById('dateTo').value;     // e.g. "2026-11-12"
-
-            syncSessionMemory.dateFrom = rawFrom;
-            syncSessionMemory.dateTo = rawTo;
-
-            // Reset leftOff and bottomLeftOff with "Sync"
-            syncSessionMemory.leftOff = 0;
-            syncSessionMemory.bottomLeftOff = 0;
-
-            // Remove older fetched items and clear view
             fetchedEmails = [];
-            activeSourceFilters.clear();
-            localStorage.removeItem('allmailspot_saved_filters');
-            
             renderFilteredGrids();
-
-            // Trigger continuous sync with the newly locked session dates
             startContinuousSync();
         }
 
@@ -589,19 +536,16 @@
             const accounts = parseStoredCredentials();
             if (accounts.length === 0) return;
 
-            // Fallback if triggered without prior memory
-            if (!syncSessionMemory.dateFrom) {
-                syncSessionMemory.dateFrom = document.getElementById('dateFrom').value;
-                syncSessionMemory.dateTo = document.getElementById('dateTo').value;
-            }
-
             isSyncRunning = true;
+            const dateFromVal = document.getElementById('dateFrom').value;
+            const dateToVal = document.getElementById('dateTo').value;
             const spinner = document.getElementById('refreshSpinner');
             const syncBadge = document.getElementById('syncStatusBadge');
 
             spinner.classList.add('fa-spin');
             syncBadge.classList.remove('hidden');
 
+            let offset = 0;
             let hasMore = true;
 
             try {
@@ -611,9 +555,9 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
                             accounts, 
-                            date: syncSessionMemory.dateFrom, 
-                            date_to: syncSessionMemory.dateTo,
-                            offset: syncSessionMemory.leftOff, 
+                            date: dateFromVal, 
+                            date_to: dateToVal,
+                            offset: offset, 
                             limit: CHUNK_SIZE 
                         })
                     });
@@ -623,18 +567,16 @@
                         data.emails.forEach(newEmail => {
                             if (!fetchedEmails.some(e => e.id === newEmail.id)) {
                                 fetchedEmails.push(newEmail);
-                                activeSourceFilters.add(newEmail.source);
+                                if (!localStorage.getItem('InboxMailSpot_saved_filters')) {
+                                    activeSourceFilters.add(newEmail.source);
+                                }
                             }
                         });
 
-                        saveFiltersToStorage();
                         updateSourceFilterUI();
                         renderFilteredGrids();
 
-                        // Update leftOff and bottomLeftOff with every continuous sync chunk
-                        syncSessionMemory.leftOff += CHUNK_SIZE;
-                        syncSessionMemory.bottomLeftOff = syncSessionMemory.leftOff;
-
+                        offset += CHUNK_SIZE;
                         if (data.emails.length < CHUNK_SIZE) {
                             hasMore = false;
                         }
@@ -654,7 +596,7 @@
         }
 
         function loadSavedFilters() {
-            const saved = localStorage.getItem('allmailspot_saved_filters');
+            const saved = localStorage.getItem('InboxMailSpot_saved_filters');
             if (saved) {
                 try {
                     activeSourceFilters = new Set(JSON.parse(saved));
@@ -665,7 +607,7 @@
         }
 
         function saveFiltersToStorage() {
-            localStorage.setItem('allmailspot_saved_filters', JSON.stringify([...activeSourceFilters]));
+            localStorage.setItem('InboxMailSpot_saved_filters', JSON.stringify([...activeSourceFilters]));
         }
 
         function updateSourceFilterUI() {
@@ -673,7 +615,7 @@
             const labelHtml = '<span class="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1"><i class="fa-solid fa-filter mr-1 text-green-600"></i>Sources:</span>';
             const allSources = [...new Set(fetchedEmails.map(e => e.source))].sort();
             
-            if (!localStorage.getItem('allmailspot_saved_filters') && activeSourceFilters.size === 0 && allSources.length > 0) {
+            if (!localStorage.getItem('InboxMailSpot_saved_filters') && activeSourceFilters.size === 0 && allSources.length > 0) {
                 allSources.forEach(s => activeSourceFilters.add(s));
                 saveFiltersToStorage();
             }
@@ -781,22 +723,7 @@
             document.getElementById('modalFromName').textContent = email.from_name;
             document.getElementById('modalFromEmail').textContent = email.from_email;
             document.getElementById('modalSubject').textContent = email.subject;
-            
-            // Safely parse and format date string for Account / Date metadata header
-            let formattedDate = email.date || '';
-            try {
-                if (formattedDate) {
-                    const parsedDate = new Date(email.date);
-                    if (!isNaN(parsedDate)) {
-                        formattedDate = parsedDate.toLocaleString();
-                    }
-                }
-            } catch (e) {
-                formattedDate = email.date;
-            }
-
-            const shortAccount = email.account ? email.account.split('@')[0] : 'Account';
-            document.getElementById('modalMetaBrief').innerHTML = `${shortAccount} &bull; ${escapeHTML(formattedDate)}`;
+            document.getElementById('modalMetaBrief').textContent = `${email.account.split('@')[0]} &bull; ${email.date.substring(0, 16)}`;
             document.getElementById('modalSourceBadge').textContent = email.source;
 
             // Original & Dynamic Decoded Return-Path
@@ -891,24 +818,12 @@
 
         function disableEmailLinks() {
             let code = cmEditor.getValue();
-            const tldRegex = /\.(com|net|co|ai|io|app|shop|store|org|me|design|blog|info|in|biz|us|uk|xyz|dev|site|tech|edu|gov|png|jpg|jpeg|gif|svg|css|js|nz|nl)\b/gi;
+            const tldRegex = /\.(com|net|co|ai|io|app|shop|store|org|me|design|blog|info|in|biz|us|uk|xyz|dev|site|tech|edu|gov|png|jpg|jpeg|gif|svg|css|js)\b/gi;
             code = code.replace(tldRegex, '$1');
 
             cmEditor.setValue(code);
             updateIframe(code);
             showToast('Removed all dots (.) from links and extensions!');
-        }
-
-        function clearTitleContent() {
-            let code = cmEditor.getValue();
-    
-            // Matches <title>...</title> case-insensitively and replaces the inner content with an empty string
-            const titleRegex = /<title\b[^>]*>([\s\S]*?)<\/title>/gi;
-            code = code.replace(titleRegex, '<title></title>');
-
-            cmEditor.setValue(code);
-            updateIframe(code);
-            showToast('Cleared content inside title tags!');
         }
 
         function showToast(message) {
@@ -1005,134 +920,83 @@
             }
         }
 
+        function executeFind() {
+            const query = document.getElementById('findInput').value;
+            const countEl = document.getElementById('findMatchCount');
+            if (!query) {
+                countEl.textContent = '0 matches';
+                return;
+            }
 
-        // Externally modified functioning "find Replace"
+            let count = 0;
+            const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+            while (cursor.findNext()) {
+                count++;
+            }
 
-        // Start\\>\\>
+            countEl.textContent = `${count} matches`;
+            if (count > 0) {
+                findNextMatch();
+            }
+        }
 
-        let searchMarkers = [];
+        function findNextMatch() {
+            const query = document.getElementById('findInput').value;
+            if (!query) return;
 
-// Clear existing highlight markers from the editor
-function clearSearchMarks() {
-    searchMarkers.forEach(marker => marker.clear());
-    searchMarkers = [];
-}
+            const cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
+            if (cursor.findNext()) {
+                cmEditor.setSelection(cursor.from(), cursor.to());
+                cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
+            } else {
+                const wrapCursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+                if (wrapCursor.findNext()) {
+                    cmEditor.setSelection(wrapCursor.from(), wrapCursor.to());
+                    cmEditor.scrollIntoView({ from: wrapCursor.from(), to: wrapCursor.to() }, 100);
+                }
+            }
+        }
 
-// Mark all matches in the document (active one gets green, others get pink/purple)
-function markAllMatches(query, activeFrom = null, activeTo = null) {
-    clearSearchMarks();
-    if (!query) return;
+        function findPreviousMatch() {
+            const query = document.getElementById('findInput').value;
+            if (!query) return;
 
-    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
-    while (cursor.findNext()) {
-        const from = cursor.from();
-        const to = cursor.to();
+            const cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
+            if (cursor.findPrevious()) {
+                cmEditor.setSelection(cursor.from(), cursor.to());
+                cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
+            }
+        }
 
-        // Check if this specific match is the currently active one
-        const isActive = activeFrom && activeTo && 
-            from.line === activeFrom.line && from.ch === activeFrom.ch &&
-            to.line === activeFrom.line && to.ch === activeFrom.ch;
+        function replaceCurrentMatch() {
+            const query = document.getElementById('findInput').value;
+            const replaceVal = document.getElementById('replaceInput').value || '';
+            if (!query) return;
 
-        const className = isActive ? 'cm-search-match-active' : 'cm-search-match-other';
-        const marker = cmEditor.markText(from, to, { className: className });
-        searchMarkers.push(marker);
-    }
-}
+            const sel = cmEditor.getSelection();
+            if (sel.toLowerCase() === query.toLowerCase()) {
+                cmEditor.replaceSelection(replaceVal);
+                findNextMatch();
+                executeFind();
+            } else {
+                findNextMatch();
+            }
+        }
 
-function executeFind() {
-    const query = document.getElementById('findInput').value;
-    const countEl = document.getElementById('findMatchCount');
-    clearSearchMarks();
+        function replaceAllMatches() {
+            const query = document.getElementById('findInput').value;
+            const replaceVal = document.getElementById('replaceInput').value || '';
+            if (!query) return;
 
-    if (!query) {
-        countEl.textContent = '0 matches';
-        return;
-    }
-
-    let count = 0;
-    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
-    while (cursor.findNext()) {
-        count++;
-    }
-
-    countEl.textContent = `${count} matches`;
-    if (count > 0) {
-        findNextMatch();
-    }
-}
-
-function findNextMatch() {
-    const query = document.getElementById('findInput').value;
-    if (!query) return;
-
-    let cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
-    
-    if (!cursor.findNext()) {
-        // Wrap around to the beginning if nothing found forward
-        cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
-        if (!cursor.findNext()) return;
-    }
-
-    cmEditor.setSelection(cursor.from(), cursor.to());
-    cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
-    
-    // Re-mark all matches and highlight the current one in green
-    markAllMatches(query, cursor.from(), cursor.to());
-}
-
-function findPreviousMatch() {
-    const query = document.getElementById('findInput').value;
-    if (!query) return;
-
-    let cursor = cmEditor.getSearchCursor(query, cmEditor.getCursor(), { caseFold: true });
-    
-    if (!cursor.findPrevious()) {
-        // Wrap around to the end if nothing found backward
-        const lastLine = cmEditor.lastLine();
-        const lastCh = cmEditor.getLine(lastLine).length;
-        cursor = cmEditor.getSearchCursor(query, { line: lastLine, ch: lastCh }, { caseFold: true });
-        if (!cursor.findPrevious()) return;
-    }
-
-    cmEditor.setSelection(cursor.from(), cursor.to());
-    cmEditor.scrollIntoView({ from: cursor.from(), to: cursor.to() }, 100);
-    
-    // Re-mark all matches and highlight the current one in green
-    markAllMatches(query, cursor.from(), cursor.to());
-}
-
-function replaceCurrentMatch() {
-    const query = document.getElementById('findInput').value;
-    const replaceVal = document.getElementById('replaceInput').value || '';
-    if (!query) return;
-
-    const sel = cmEditor.getSelection();
-    if (sel.toLowerCase() === query.toLowerCase()) {
-        cmEditor.replaceSelection(replaceVal);
-        executeFind();
-    } else {
-        findNextMatch();
-    }
-}
-
-function replaceAllMatches() {
-    const query = document.getElementById('findInput').value;
-    const replaceVal = document.getElementById('replaceInput').value || '';
-    if (!query) return;
-
-    let count = 0;
-    const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
-    while (cursor.findNext()) {
-        cursor.replace(replaceVal);
-        count++;
-    }
-    showToast(`Replaced ${count} occurrences!`);
-    executeFind();
-}
-
-
-        // End//>//>
-        
+            let count = 0;
+            const cursor = cmEditor.getSearchCursor(query, { line: 0, ch: 0 }, { caseFold: true });
+            while (cursor.findNext()) {
+                cursor.replace(replaceVal);
+                count++;
+            }
+            showToast(`Replaced ${count} occurrences!`);
+            executeFind();
+        }
 
         function findHeadTag() {
             switchTab('editor');
@@ -1207,7 +1071,7 @@ function toggleStarEmail(mailId, event) {
     }
 
     const cleanHead = extractHeadOnly(rawContent);
-    let starred = JSON.parse(localStorage.getItem('allmailspot_starred_heads') || '{}');
+    let starred = JSON.parse(localStorage.getItem('InboxMailSpot_starred_heads') || '{}');
     const isStarred = !starred[uniqueKey];
     
     if (isStarred) {
@@ -1215,7 +1079,7 @@ function toggleStarEmail(mailId, event) {
     } else {
         delete starred[uniqueKey];
     }
-    localStorage.setItem('allmailspot_starred_heads', JSON.stringify(starred));
+    localStorage.setItem('InboxMailSpot_starred_heads', JSON.stringify(starred));
 
     const headName = `${mail.from_name} + ${mail.source}`.substring(0, 140);
     saveHeadToHeadMixerDB(uniqueKey, headName, cleanHead, isStarred);
@@ -1243,7 +1107,7 @@ function updateInspectorStarButtonState() {
     }
 
     const uniqueKey = getUniqueMailKey(displayedFilteredEmails[activeIndex]);
-    const starred = JSON.parse(localStorage.getItem('allmailspot_starred_heads') || '{}');
+    const starred = JSON.parse(localStorage.getItem('InboxMailSpot_starred_heads') || '{}');
     const isStarred = !!starred[uniqueKey];
 
     icon.className = isStarred ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star text-amber-600 dark:text-amber-400';

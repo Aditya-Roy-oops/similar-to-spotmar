@@ -1,10 +1,11 @@
 import imaplib
 import email
+import email.utils
 import base64
 import hashlib
 import requests
 from email.header import decode_header
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify, session
 
 app = Flask(__name__, template_folder="../templates")
@@ -216,6 +217,7 @@ def load_payload():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+
 @app.route("/api/fetch-chunk", methods=["POST"])
 def fetch_chunk_api():
     if not validate_active_session():
@@ -224,17 +226,38 @@ def fetch_chunk_api():
 
     data = request.json or {}
     accounts = data.get("accounts", [])
-    target_date_str = data.get("date")
+    date_from_str = data.get("date")
+    date_to_str = data.get("date_to")
     offset = int(data.get("offset", 0))
     limit = int(data.get("limit", 7))
+    known_ids = set(data.get("known_ids", []))
+    is_incremental = bool(data.get("is_incremental", False))
+    
+    tz_offset_minutes = int(data.get("tz_offset", 0))
+    client_tz = timezone(timedelta(minutes=-tz_offset_minutes))
     
     try:
-        target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date() if target_date_str else datetime.now().date()
+        date_from = datetime.strptime(date_from_str, "%Y-%m-%d").date() if date_from_str else datetime.now(client_tz).date()
     except ValueError:
-        target_date = datetime.now().date()
+        date_from = datetime.now(client_tz).date()
 
-    formatted_date_str = target_date.strftime("%d-%b-%Y")
+    try:
+        date_to = datetime.strptime(date_to_str, "%Y-%m-%d").date() if date_to_str else date_from
+    except ValueError:
+        date_to = date_from
+
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    start_dt = datetime(date_from.year, date_from.month, date_from.day, 0, 0, 0, tzinfo=client_tz)
+    end_dt = datetime(date_to.year, date_to.month, date_to.day, 23, 59, 59, 999999, tzinfo=client_tz)
+
+    # Widen IMAP search by 1 day on each side to safely cover all timezones
+    imap_since = (date_from - timedelta(days=1)).strftime("%d-%b-%Y")
+    imap_before = (date_to + timedelta(days=2)).strftime("%d-%b-%Y")
+    
     all_fetched_emails = []
+    any_account_has_more = False
 
     for acc in accounts:
         password = acc.get("app_password", "").strip()
@@ -242,24 +265,76 @@ def fetch_chunk_api():
         if not password or not spot_id:
             continue
             
+        mail = None
         try:
             mail = imaplib.IMAP4_SSL("imap.mail.yahoo.com", 993)
             mail.login(spot_id, password)
             mail.select("INBOX", readonly=True)
 
-            status, response = mail.search(None, f'ON "{formatted_date_str}"')
+            status, response = mail.uid("search", None, f'SINCE "{imap_since}" BEFORE "{imap_before}"')
             if status != "OK" or not response[0]:
-                mail.logout()
                 continue
 
-            msg_ids = [m.decode() for m in response[0].split()]
-            reversed_ids = list(reversed(msg_ids))
-            chunk_ids = reversed_ids[offset : offset + limit]
+            raw_uids = [m.decode() for m in response[0].split()]
+            if not raw_uids:
+                continue
+
+            # Batch-fetch ONLY the Date headers for all candidate UIDs in a single IMAP call
+            # This prevents wasting multiple 7-item frontend chunks skipping newer dates
+            uid_set_str = ",".join(raw_uids)
+            res_hdrs, hdrs_data = mail.uid("fetch", uid_set_str, "(BODY.PEEK[HEADER.FIELDS (DATE)])")
             
-            for msg_id in chunk_ids:
+            valid_uids = []
+            if res_hdrs == "OK" and hdrs_data:
+                for item in hdrs_data:
+                    if isinstance(item, tuple) and len(item) >= 2:
+                        # Extract UID from response metadata e.g. b'123 (UID 45678 BODY[...]'
+                        meta_str = item[0].decode("utf-8", errors="ignore")
+                        uid_val = None
+                        if "UID " in meta_str:
+                            try:
+                                uid_val = meta_str.split("UID ")[1].split()[0].rstrip(")")
+                            except Exception:
+                                uid_val = None
+                        if not uid_val:
+                            continue
+
+                        raw_hdr = item[1].decode("utf-8", errors="ignore")
+                        hdr_msg = email.message_from_string(raw_hdr)
+                        date_hdr = hdr_msg.get("Date", "")
+                        if date_hdr:
+                            try:
+                                parsed_dt = email.utils.parsedate_to_datetime(date_hdr)
+                                if parsed_dt.tzinfo is None:
+                                    parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+                                local_dt = parsed_dt.astimezone(client_tz)
+                                
+                                if start_dt <= local_dt <= end_dt:
+                                    valid_uids.append(uid_val)
+                            except Exception:
+                                continue
+
+            # Sort ONLY the exact date-matched UIDs newest -> oldest
+            valid_uids = sorted(list(set(valid_uids)), key=lambda x: int(x), reverse=True)
+            total_valid = len(valid_uids)
+
+            if offset >= total_valid:
+                continue
+
+            chunk_uids = valid_uids[offset : offset + limit]
+            account_has_more = (offset + limit) < total_valid
+            
+            for uid in chunk_uids:
+                unique_email_id = f"{spot_id}_{uid}"
+
+                # In incremental timer check, stop immediately once we hit an already-loaded UID
+                if is_incremental and unique_email_id in known_ids:
+                    account_has_more = False
+                    break
+
                 try:
-                    res, msg_data = mail.fetch(str(msg_id), "(RFC822)")
-                    if res != "OK":
+                    res, msg_data = mail.uid("fetch", str(uid), "(RFC822)")
+                    if res != "OK" or not msg_data or not msg_data[0]:
                         continue
                         
                     raw_email = msg_data[0][1]
@@ -287,7 +362,8 @@ def fetch_chunk_api():
                     body_content = extract_email_body(msg)
                     
                     all_fetched_emails.append({
-                        "id": f"{spot_id}_{msg_id}",
+                        "id": unique_email_id,
+                        "uid": int(uid),
                         "account": spot_id,
                         "from_name": from_name,
                         "from_email": from_email,
@@ -300,14 +376,23 @@ def fetch_chunk_api():
                     })
                 except Exception:
                     continue
-            mail.logout()
+
+            if account_has_more:
+                any_account_has_more = True
+
         except Exception:
             pass
+        finally:
+            if mail:
+                try:
+                    mail.logout()
+                except Exception:
+                    pass
 
     return jsonify({
         "status": "success",
         "emails": all_fetched_emails,
-        "has_more": len(all_fetched_emails) > 0
+        "has_more": any_account_has_more
     })
 
 if __name__ == "__main__":

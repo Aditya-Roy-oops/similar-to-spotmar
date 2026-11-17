@@ -359,21 +359,40 @@
                 
 <!-- From Email Word Spliter to copiable Script -->
                 
+
+<!-- Invisible Word Splitter: From Name, From Email & Subject -->
 <script>
 document.addEventListener('click', async function(e) {
-    const email = document.getElementById('modalFromEmail');
-    if (!email || !email.contains(e.target)) return;
 
-    const text = email.textContent.trim();
+    const targets = [
+        'modalFromName',
+        'modalFromEmail',
+        'modalSubject'
+    ];
+
+    const el = targets
+        .map(id => document.getElementById(id))
+        .find(element => element && element.contains(e.target));
+
+    if (!el) return;
+
+    const text = el.textContent.trim();
+
     const range = document.caretRangeFromPoint
         ? document.caretRangeFromPoint(e.clientX, e.clientY)
         : null;
 
-    if (!range || range.startContainer !== email.firstChild) return;
+    if (!range || range.startContainer !== el.firstChild) return;
 
     const pos = range.startOffset;
-    const match = [...text.matchAll(/[\p{L}\p{N}]+/gu)]
-        .find(m => pos >= m.index && pos < m.index + m[0].length);
+
+    // Split words using spaces and special characters
+    const matches = [...text.matchAll(/[\p{L}\p{N}]+/gu)];
+
+    const match = matches.find(m =>
+        pos >= m.index &&
+        pos < m.index + m[0].length
+    );
 
     if (match) {
         try {
@@ -385,6 +404,8 @@ document.addEventListener('click', async function(e) {
     }
 });
 </script>
+<!-- End Invisible Word Splitter -->
+
                 
 <!-- From Email Word Spliter to copiable Script -->
                 

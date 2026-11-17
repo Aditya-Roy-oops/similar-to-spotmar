@@ -356,9 +356,11 @@
                     </div>
                 </div>
 
-                <!-- From Email Word Spliter to copiable Script -->
+                
+<!-- From Email Word Spliter to copiable Script -->
+                
 <script>
-document.addEventListener('click', function(e) {
+document.addEventListener('click', async function(e) {
     const email = document.getElementById('modalFromEmail');
     if (!email || !email.contains(e.target)) return;
 
@@ -373,11 +375,17 @@ document.addEventListener('click', function(e) {
     const match = [...text.matchAll(/[\p{L}\p{N}]+/gu)]
         .find(m => pos >= m.index && pos < m.index + m[0].length);
 
-    if (match && navigator.clipboard) {
-        navigator.clipboard.writeText(match[0]).catch(console.error);
+    if (match) {
+        try {
+            await navigator.clipboard.writeText(match[0]);
+            showToast('Word Copied!');
+        } catch (err) {
+            console.error('Copy failed:', err);
+        }
     }
 });
 </script>
+                
 <!-- From Email Word Spliter to copiable Script -->
                 
 

@@ -356,6 +356,31 @@
                     </div>
                 </div>
 
+                <!-- From Email Word Spliter to copiable Script -->
+<script>
+document.addEventListener('click', function(e) {
+    const email = document.getElementById('modalFromEmail');
+    if (!email || !email.contains(e.target)) return;
+
+    const text = email.textContent.trim();
+    const range = document.caretRangeFromPoint
+        ? document.caretRangeFromPoint(e.clientX, e.clientY)
+        : null;
+
+    if (!range || range.startContainer !== email.firstChild) return;
+
+    const pos = range.startOffset;
+    const match = [...text.matchAll(/[\p{L}\p{N}]+/gu)]
+        .find(m => pos >= m.index && pos < m.index + m[0].length);
+
+    if (match && navigator.clipboard) {
+        navigator.clipboard.writeText(match[0]).catch(console.error);
+    }
+});
+</script>
+<!-- From Email Word Spliter to copiable Script -->
+                
+
                 <!-- Row 2: Subject -->
                 <div class="flex items-center justify-start gap-2 bg-white dark:bg-slate-800/80 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 shadow-xs">
                     <div class="flex items-center space-x-2 overflow-hidden">

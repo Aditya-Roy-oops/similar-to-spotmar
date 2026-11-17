@@ -26,6 +26,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/selection/active-line.min.js"></script>
 
+                            <!-- Script 1 (script liink should be loaded beforehand) for Drag & Drop  id="sortableMailToolbar" -->
+                    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+
+
     <style>
         .CodeMirror {
             height: 100%;
@@ -181,7 +185,14 @@
 
         <div class="hidden md:flex flex-1 bg-white dark:bg-slate-900 flex-col h-full transition-colors duration-200">
             <div class="px-4 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
-                <div class="flex items-center space-x-2 flex-wrap gap-y-1.5">
+                
+                
+                 <!-- Drop & Drag update    "   id="sortableMailToolbar"   "-->
+
+                <!-- Drag & Drop options Start  -->
+
+                <div id="sortableMailToolbar" class="flex items-center space-x-2 flex-wrap gap-y-1.5">
+                
                     <div class="flex items-center space-x-1 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs shadow-xs mr-1">
                         <button onclick="navigateMail('prev')" id="prevMailBtn" title="Previous Email (Left Arrow)" class="px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:text-green-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition font-bold">
                             <i class="fa-solid fa-chevron-left text-[10px]"></i>
@@ -231,8 +242,89 @@
                         <span>Clear Title Content</span>
                     </button>
 
-                    
+
+                    <!-- Script started for Drag & Drop Options -->
+                    <!-- id="sortableMailToolbar" -->
+
+                    <script>
+
+(function () {
+    const toolbar = document.getElementById('sortableMailToolbar');
+
+    if (!toolbar || toolbar.dataset.sortableInit) return;
+    if (typeof Sortable === 'undefined') return;
+
+    toolbar.dataset.sortableInit = 'true';
+
+    let dragged = false;
+
+    // Restore previously saved order using existing DOM elements
+    const savedOrder = JSON.parse(
+        localStorage.getItem('mailToolbarOrder') || 'null'
+    );
+
+    if (Array.isArray(savedOrder)) {
+        const elements = [...toolbar.children];
+
+        savedOrder.forEach(id => {
+            const element = elements.find(el => el.dataset.sortId === id);
+            if (element) toolbar.appendChild(element);
+        });
+    }
+
+    // Assign stable IDs to existing toolbar items
+    [...toolbar.children].forEach((el, index) => {
+        if (!el.dataset.sortId) {
+            el.dataset.sortId = 'toolbar-item-' + index;
+        }
+    });
+
+    new Sortable(toolbar, {
+        animation: 200,
+        draggable: '> *',
+        delay: 250,
+        delayOnTouchOnly: false,
+        touchStartThreshold: 4,
+        fallbackTolerance: 5,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+
+        onStart: function () {
+            dragged = true;
+        },
+
+        onEnd: function () {
+            localStorage.setItem(
+                'mailToolbarOrder',
+                JSON.stringify(
+                    [...toolbar.children].map(el => el.dataset.sortId)
+                )
+            );
+
+            setTimeout(() => {
+                dragged = false;
+            }, 150);
+        }
+    });
+
+    // Prevent accidental button clicks after dragging
+    toolbar.addEventListener('click', function (e) {
+        if (dragged) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            dragged = false;
+        }
+    }, true);
+
+})();
+
+                    </script>
                 </div>
+                                <!-- Drag & Drop options Start  -->
+
+
+
                 
                 <button onclick="closeInspector()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-base transition ml-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
